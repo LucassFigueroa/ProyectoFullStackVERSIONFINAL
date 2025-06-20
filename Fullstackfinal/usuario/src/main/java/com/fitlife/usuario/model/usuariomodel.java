@@ -32,5 +32,9 @@ public class usuariomodel {
     @NotBlank
     @Size(max = 100)
     @Column(nullable = false)
-    private String contrasena;
+    private String contrasena; // Encriptada
+
+    @NotBlank
+    @Column(nullable = false)
+    private String rol; // ✅ NUEVO: ADMIN, CLIENTE, ENTRENADOR, etc.
 }

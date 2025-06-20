@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -16,9 +18,30 @@ public class usuariocontroller {
     @Autowired
     private usuarioservice usuarioservice;
 
-    @PostMapping("/usuarios")
-    public usuariomodel create(@Valid @RequestBody usuariomodel usuario) {
-        return usuarioservice.save(usuario);
+    @PostMapping("/register")
+    public usuariomodel register(@Valid @RequestBody usuariomodel usuario) {
+        return usuarioservice.register(usuario);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginData) {
+        String email = loginData.get("email");
+        String contrasena = loginData.get("contrasena");
+
+        usuariomodel user = usuarioservice.login(email, contrasena);
+        if (user != null) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Login OK ✅");
+            response.put("id", user.getId());
+            response.put("nombre", user.getNombre());
+            response.put("email", user.getEmail());
+            response.put("rol", user.getRol());
+            return ResponseEntity.ok(response);
+        } else {
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Credenciales inválidas ❌");
+            return ResponseEntity.status(401).body(response);
+        }
     }
 
     @GetMapping("/usuarios")

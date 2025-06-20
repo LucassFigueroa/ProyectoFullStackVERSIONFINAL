@@ -3,6 +3,7 @@ package com.fitlife.usuario.service;
 import com.fitlife.usuario.model.usuariomodel;
 import com.fitlife.usuario.repository.usuariorepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,8 +14,22 @@ public class usuarioservice {
     @Autowired
     private usuariorepository usuariorepository;
 
-    public usuariomodel save(usuariomodel usuario) {
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    // Registro con encriptado y rol
+    public usuariomodel register(usuariomodel usuario) {
+        usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
         return usuariorepository.save(usuario);
+    }
+
+    // Login: devuelve el usuario si OK, null si no OK
+    public usuariomodel login(String email, String rawPassword) {
+        usuariomodel user = usuariorepository.findByEmail(email);
+        if (user == null) {
+            return null;
+        }
+        boolean ok = passwordEncoder.matches(rawPassword, user.getContrasena());
+        return ok ? user : null;
     }
 
     public List<usuariomodel> getAll() {
@@ -29,7 +44,8 @@ public class usuarioservice {
         return usuariorepository.findById(id).map(usuario -> {
             usuario.setNombre(details.getNombre());
             usuario.setEmail(details.getEmail());
-            usuario.setContrasena(details.getContrasena());
+            usuario.setRol(details.getRol());
+            usuario.setContrasena(passwordEncoder.encode(details.getContrasena()));
             return usuariorepository.save(usuario);
         }).orElse(null);
     }
@@ -40,9 +56,5 @@ public class usuarioservice {
             return true;
         }
         return false;
-    }
-
-    public usuariomodel findByEmail(String email) {
-        return usuariorepository.findByEmail(email);
     }
 }

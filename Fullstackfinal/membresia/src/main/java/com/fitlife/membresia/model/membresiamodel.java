@@ -34,12 +34,12 @@ public class membresiamodel {
     private String estado;
 
     public List<membresiamodel> findAll() {
-        // TODO Auto-generated method stub
+        
         throw new UnsupportedOperationException("Unimplemented method 'findAll'");
     }
 
     public membresiamodel save(membresiamodel membresia) {
-        // TODO Auto-generated method stub
+        
         throw new UnsupportedOperationException("Unimplemented method 'save'");
     }
 
