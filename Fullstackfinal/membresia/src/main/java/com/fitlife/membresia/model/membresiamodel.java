@@ -1,17 +1,25 @@
 package com.fitlife.membresia.model;
 
-import java.util.List;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+import java.time.LocalDate;
 
 @Entity
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table(name = "membresia") 
 public class membresiamodel {
 
     @Id
@@ -24,23 +32,13 @@ public class membresiamodel {
     @NotBlank(message = "El tipo de membresía es obligatorio")
     private String tipo;
 
-    @NotBlank(message = "La fecha de inicio es obligatoria")
-    private String fechaInicio;
+    @NotNull(message = "La fecha de inicio es obligatoria")
+    private LocalDate fechaInicio;
 
-    @NotBlank(message = "La fecha de fin es obligatoria")
-    private String fechaFin;
+    @NotNull(message = "La fecha de fin es obligatoria")
+    private LocalDate fechaFin;
 
     @NotBlank(message = "El estado es obligatorio")
     private String estado;
-
-    public List<membresiamodel> findAll() {
-        
-        throw new UnsupportedOperationException("Unimplemented method 'findAll'");
-    }
-
-    public membresiamodel save(membresiamodel membresia) {
-        
-        throw new UnsupportedOperationException("Unimplemented method 'save'");
-    }
 
 }

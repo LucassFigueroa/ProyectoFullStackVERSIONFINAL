@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "notificaciones")
+@Table(name = "notificaciones") 
 public class notificacionesmodel {
 
     @Id
@@ -41,5 +41,5 @@ public class notificacionesmodel {
 
     @NotBlank(message = "El estado es obligatorio")
     @Column(length = 20, nullable = false)
-    private String estado;
+    private String estado; // Ejemplo: "Leida", "No Leida"
 }
