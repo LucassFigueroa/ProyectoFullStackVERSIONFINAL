@@ -18,8 +18,8 @@ import java.time.LocalDate;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@Table(name = "pago") 
+@Builder(toBuilder = true) 
+@Table(name = "pago")
 public class pagomodel {
 
     @Id
