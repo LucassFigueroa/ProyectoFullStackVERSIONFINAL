@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  clase:
+    build: ./Fullstackfinal/clase
+    ports:
+      - "8080:8080"
+    restart: always
+
+  entrenador:
+    build: ./Fullstackfinal/entrenador
+    ports:
+      - "8081:8081"
+    restart: always
+
+  evaluacionfisica:
+    build: ./Fullstackfinal/evaluacionfisica
+    ports:
+      - "8082:8082"
+    restart: always
+
+  horario:
+    build: ./Fullstackfinal/horario
+    ports:
+      - "8083:8083"
+    restart: always
+
+  inventario:
+    build: ./Fullstackfinal/inventario
+    ports:
+      - "8084:8084"
+    restart: always
+
+  membresia:
+    build: ./Fullstackfinal/membresia
+    ports:
+      - "8085:8085"
+    restart: always
+
+  notificaciones:
+    build: ./Fullstackfinal/notificaciones
+    ports:
+      - "8086:8086"
+    restart: always
+
+  pago:
+    build: ./Fullstackfinal/pago
+    ports:
+      - "8087:8087"
+    restart: always
+
+  reporte:
+    build: ./Fullstackfinal/reporte
+    ports:
+      - "8088:8088"
+    restart: always
+
+  reserva:
+    build: ./Fullstackfinal/reserva
+    ports:
+      - "8089:8089"
+    restart: always
+
+  soporte:
+    build: ./Fullstackfinal/soporte
+    ports:
+      - "8090:8090"
+    restart: always
+
+  usuario:
+    build: ./Fullstackfinal/usuario
+    ports:
+      - "8091:8091"
+    restart: always
