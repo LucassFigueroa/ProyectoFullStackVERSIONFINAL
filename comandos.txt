@@ -1,0 +1,21 @@
+| Microservicio        | Puerto | Link Swagger                                                                                  |
+| -------------------- | ------ | --------------------------------------------------------------------------------------------- |
+| clase            | 8080 | 👉 [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html) |
+| entrenador       | 8081 | 👉 [http://localhost:8081/swagger-ui/index.html](http://localhost:8081/swagger-ui/index.html) |
+| evaluacionfisica | 8082 | 👉 [http://localhost:8082/swagger-ui/index.html](http://localhost:8082/swagger-ui/index.html) |
+| horario          | 8083 | 👉 [http://localhost:8083/swagger-ui/index.html](http://localhost:8083/swagger-ui/index.html) |
+| inventario       | 8084 | 👉 [http://localhost:8084/swagger-ui/index.html](http://localhost:8084/swagger-ui/index.html) |
+| membresia        | 8085 | 👉 [http://localhost:8085/swagger-ui/index.html](http://localhost:8085/swagger-ui/index.html) |
+| notificaciones   | 8086 | 👉 [http://localhost:8086/swagger-ui/index.html](http://localhost:8086/swagger-ui/index.html) |
+| pago             | 8087 | 👉 [http://localhost:8087/swagger-ui/index.html](http://localhost:8087/swagger-ui/index.html) |
+| reporte          | 8088 | 👉 [http://localhost:8088/swagger-ui/index.html](http://localhost:8088/swagger-ui/index.html) |
+| reserva          | 8089 | 👉 [http://localhost:8089/swagger-ui/index.html](http://localhost:8089/swagger-ui/index.html) |
+| soporte          | 8090 | 👉 [http://localhost:8090/swagger-ui/index.html](http://localhost:8090/swagger-ui/index.html) |
+| usuario          | 8091 | 👉 [http://localhost:8091/swagger-ui/index.html](http://localhost:8091/swagger-ui/index.html) |
+
+
+
+----------Comandos Docker--------------
+ESTO REINICIA TODO:docker compose down -v
+ESTO LO PRENDE DESDE CERO:docker compose up --build
+VER CONTENEDORES ACTIVOS: docker ps, docker ps -a para ver todos los activos + detenidos)
