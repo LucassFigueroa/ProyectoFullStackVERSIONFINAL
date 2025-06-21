@@ -1,4 +1,4 @@
-package com.fitlife.reporte.controller;
+package com.fitlife.reporte.test;
 
 import com.fitlife.reporte.ReporteApplication;
 import com.fitlife.reporte.model.reportemodel;

@@ -1,7 +1,9 @@
-package com.fitlife.reporte.service;
+package com.fitlife.reporte.test;
 
 import com.fitlife.reporte.model.reportemodel;
 import com.fitlife.reporte.repository.reporterepository;
+import com.fitlife.reporte.service.reporteservice;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
