@@ -7,8 +7,6 @@ import com.fitlife.reporte.service.reporteservice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
-import org.springframework.data.domain.*;
-
 import java.time.LocalDateTime;
 import java.util.*;
 
