@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class entrenadorservice {
@@ -13,31 +14,38 @@ public class entrenadorservice {
     @Autowired
     private entrenadorrepository entrenadorrepository;
 
-    public entrenador save(entrenador entrenador) {
+    // Crear
+    public entrenador crearEntrenador(entrenador entrenador) {
         return entrenadorrepository.save(entrenador);
     }
 
-    public List<entrenador> getAll() {
+    // Obtener uno por ID
+    public Optional<entrenador> obtenerEntrenadorPorId(Long id) {
+        return entrenadorrepository.findById(id);
+    }
+
+    // Obtener todos
+    public List<entrenador> obtenerTodos() {
         return entrenadorrepository.findAll();
     }
 
-    public entrenador getById(Long id) {
-        return entrenadorrepository.findById(id).orElse(null);
-    }
-
-    public entrenador update(Long id, entrenador details) {
+    // Actualizar
+    public entrenador actualizarEntrenador(Long id, entrenador detalles) {
         return entrenadorrepository.findById(id).map(entrenador -> {
-            entrenador.setNombre(details.getNombre());
-            entrenador.setEspecialidad(details.getEspecialidad());
+            entrenador.setNombre(detalles.getNombre());
+            entrenador.setEspecialidad(detalles.getEspecialidad());
+            // agrega otros campos si tienes más
             return entrenadorrepository.save(entrenador);
         }).orElse(null);
     }
 
-    public boolean delete(Long id) {
+    // Eliminar
+    public boolean eliminarEntrenador(Long id) {
         if (entrenadorrepository.existsById(id)) {
             entrenadorrepository.deleteById(id);
             return true;
+        } else {
+            return false;
         }
-        return false;
     }
 }

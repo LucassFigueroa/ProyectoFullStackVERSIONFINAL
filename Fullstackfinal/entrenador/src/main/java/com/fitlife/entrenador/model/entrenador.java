@@ -18,13 +18,13 @@ public class entrenador {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    @Size(max = 20)
-    @Column(length = 20, nullable = false)
+    @NotBlank(message = "El nombre no puede estar vacío")
+    @Size(max = 50)
+    @Column(length = 50, nullable = false)
     private String nombre;
 
-    @NotBlank
-    @Size(max = 20)
-    @Column(length = 20, nullable = false)
+    @NotBlank(message = "La especialidad no puede estar vacía")
+    @Size(max = 50)
+    @Column(length = 50, nullable = false)
     private String especialidad;
 }

@@ -27,7 +27,7 @@ public class usuariocontrollerTest {
 
     @Autowired
     private MockMvc mockMvc;
-@SuppressWarnings("removal")
+
     @MockBean
     private usuarioservice usuarioservice;
 

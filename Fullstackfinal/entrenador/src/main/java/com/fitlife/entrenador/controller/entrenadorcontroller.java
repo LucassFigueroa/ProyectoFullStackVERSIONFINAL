@@ -18,29 +18,30 @@ public class entrenadorcontroller {
 
     @PostMapping("/entrenadores")
     public entrenador create(@Valid @RequestBody entrenador entrenador) {
-        return entrenadorservice.save(entrenador);
+        return entrenadorservice.crearEntrenador(entrenador);
     }
 
     @GetMapping("/entrenadores")
     public List<entrenador> getAll() {
-        return entrenadorservice.getAll();
+        return entrenadorservice.obtenerTodos();
     }
 
     @GetMapping("/entrenadores/{id}")
     public ResponseEntity<entrenador> getById(@PathVariable Long id) {
-        entrenador entrenador = entrenadorservice.getById(id);
-        return entrenador != null ? ResponseEntity.ok(entrenador) : ResponseEntity.notFound().build();
+        return entrenadorservice.obtenerEntrenadorPorId(id)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/entrenadores/{id}")
     public ResponseEntity<entrenador> update(@PathVariable Long id, @Valid @RequestBody entrenador details) {
-        entrenador updated = entrenadorservice.update(id, details);
+        entrenador updated = entrenadorservice.actualizarEntrenador(id, details);
         return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/entrenadores/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        boolean deleted = entrenadorservice.delete(id);
+        boolean deleted = entrenadorservice.eliminarEntrenador(id);
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
 }
