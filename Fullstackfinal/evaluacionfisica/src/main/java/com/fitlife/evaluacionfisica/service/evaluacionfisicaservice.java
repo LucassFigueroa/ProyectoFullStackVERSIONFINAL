@@ -5,6 +5,7 @@ import com.fitlife.evaluacionfisica.repository.evaluacionfisicarepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -43,5 +44,13 @@ public class evaluacionfisicaservice {
             return true;
         }
         return false;
+    }
+
+    public List<evaluacionfisica> getByUsuarioId(Long usuarioid) {
+        return evaluacionfisicarepository.findByUsuarioid(usuarioid);
+    }
+
+    public List<evaluacionfisica> getByFechaEvaluacionBetween(LocalDate desde, LocalDate hasta) {
+        return evaluacionfisicarepository.findByFechaevaluacionBetween(desde, hasta);
     }
 }
