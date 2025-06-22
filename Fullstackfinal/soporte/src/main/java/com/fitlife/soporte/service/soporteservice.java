@@ -40,4 +40,8 @@ public class soporteservice {
         }
         return false;
     }
+
+    public List<soportemodel> findByAsunto(String keyword) {
+        return soporterepository.findByAsuntoContainingIgnoreCase(keyword);
+    }
 }

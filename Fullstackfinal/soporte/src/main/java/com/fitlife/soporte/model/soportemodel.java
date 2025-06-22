@@ -18,13 +18,13 @@ public class soportemodel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    @Size(max = 50)
+    @NotBlank(message = "El asunto no puede estar vacío")
+    @Size(max = 50, message = "El asunto no debe superar los 50 caracteres")
     @Column(length = 50, nullable = false)
     private String asunto;
 
-    @NotBlank
-    @Size(max = 255)
+    @NotBlank(message = "El mensaje no puede estar vacío")
+    @Size(max = 255, message = "El mensaje no debe superar los 255 caracteres")
     @Column(length = 255, nullable = false)
     private String mensaje;
 }

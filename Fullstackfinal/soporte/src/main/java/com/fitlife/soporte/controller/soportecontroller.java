@@ -17,8 +17,8 @@ public class soportecontroller {
     private soporteservice soporteservice;
 
     @PostMapping("/soportes")
-    public soportemodel create(@Valid @RequestBody soportemodel soporte) {
-        return soporteservice.save(soporte);
+    public ResponseEntity<soportemodel> create(@Valid @RequestBody soportemodel soporte) {
+        return ResponseEntity.ok(soporteservice.save(soporte));
     }
 
     @GetMapping("/soportes")
@@ -42,5 +42,10 @@ public class soportecontroller {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         boolean deleted = soporteservice.delete(id);
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/soportes/search")
+    public List<soportemodel> searchByAsunto(@RequestParam String keyword) {
+        return soporteservice.findByAsunto(keyword);
     }
 }
