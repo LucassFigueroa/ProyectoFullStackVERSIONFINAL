@@ -31,8 +31,8 @@ public class reportecontroller {
     @Operation(summary = "Obtener todos los reportes")
     @GetMapping("/reportes")
     public List<reportemodel> getAll(
-        @RequestParam(required = false) Integer page,
-        @RequestParam(required = false) Integer size) {
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
 
         if (page != null && size != null) {
             Page<reportemodel> pagina = reporteservice.getAll(PageRequest.of(page, size));
@@ -46,21 +46,30 @@ public class reportecontroller {
     @GetMapping("/reportes/{id}")
     public ResponseEntity<reportemodel> getById(@PathVariable Long id) {
         reportemodel reporte = reporteservice.getById(id);
-        return reporte != null ? ResponseEntity.ok(reporte) : ResponseEntity.notFound().build();
+        return (reporte != null)
+                ? ResponseEntity.ok(reporte)
+                : ResponseEntity.notFound().build();
     }
 
     @Operation(summary = "Actualizar reporte por ID")
     @PutMapping("/reportes/{id}")
-    public ResponseEntity<reportemodel> update(@PathVariable Long id, @Valid @RequestBody reportemodel details) {
+    public ResponseEntity<reportemodel> update(
+            @PathVariable Long id,
+            @Valid @RequestBody reportemodel details) {
+
         reportemodel updated = reporteservice.update(id, details);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+        return (updated != null)
+                ? ResponseEntity.ok(updated)
+                : ResponseEntity.notFound().build();
     }
 
     @Operation(summary = "Eliminar reporte por ID")
     @DeleteMapping("/reportes/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         boolean deleted = reporteservice.delete(id);
-        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+        return (deleted)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
     }
 
     @Operation(summary = "Filtrar reportes por tipo")
@@ -74,9 +83,10 @@ public class reportecontroller {
     public List<reportemodel> getByFecha(
             @RequestParam String desde,
             @RequestParam String hasta) {
+
+
         LocalDateTime fechaDesde = LocalDateTime.parse(desde);
         LocalDateTime fechaHasta = LocalDateTime.parse(hasta);
         return reporteservice.getByFechaCreacionBetween(fechaDesde, fechaHasta);
     }
 }
-
