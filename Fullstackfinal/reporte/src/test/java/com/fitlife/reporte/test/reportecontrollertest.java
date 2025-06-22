@@ -32,7 +32,6 @@ public class reportecontrollertest {
         MockitoAnnotations.openMocks(this);
         reporte = new reportemodel();
         reporte.setId(id);
-        // Puedes agregar más atributos si los tiene tu modelo
     }
 
     @Test

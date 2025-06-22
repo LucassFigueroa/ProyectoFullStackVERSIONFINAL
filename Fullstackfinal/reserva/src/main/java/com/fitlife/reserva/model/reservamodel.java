@@ -1,10 +1,14 @@
 package com.fitlife.reserva.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "reservas")
@@ -17,19 +21,20 @@ public class reservamodel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
+    @NotNull(message = "El ID del usuario no puede ser nulo")
     @Column(nullable = false)
-    private Long usuarioid;
+    private Long usuarioId;
 
-    @NotNull
+    @NotNull(message = "El ID de la clase no puede ser nulo")
     @Column(nullable = false)
-    private Long claseid;
+    private Long claseId;
 
-    @NotNull
+    @NotNull(message = "La fecha es obligatoria")
+    @Future(message = "La fecha debe ser futura")
     @Column(nullable = false)
-    private String fecha;
+    private LocalDate fecha;
 
-    @NotNull
+    @NotNull(message = "La hora es obligatoria")
     @Column(nullable = false)
-    private String hora;
+    private LocalTime hora;
 }

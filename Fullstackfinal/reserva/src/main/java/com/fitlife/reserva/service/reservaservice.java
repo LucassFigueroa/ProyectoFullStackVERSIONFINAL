@@ -5,6 +5,7 @@ import com.fitlife.reserva.repository.reservarepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -14,6 +15,9 @@ public class reservaservice {
     private reservarepository reservarepository;
 
     public reservamodel save(reservamodel reserva) {
+        if (reservarepository.existsByUsuarioIdAndFechaAndHora(reserva.getUsuarioId(), reserva.getFecha(), reserva.getHora())) {
+            throw new IllegalArgumentException("Ya tienes una reserva en ese horario.");
+        }
         return reservarepository.save(reserva);
     }
 
@@ -27,8 +31,8 @@ public class reservaservice {
 
     public reservamodel update(Long id, reservamodel details) {
         return reservarepository.findById(id).map(reserva -> {
-            reserva.setUsuarioid(details.getUsuarioid());
-            reserva.setClaseid(details.getClaseid());
+            reserva.setUsuarioId(details.getUsuarioId());
+            reserva.setClaseId(details.getClaseId());
             reserva.setFecha(details.getFecha());
             reserva.setHora(details.getHora());
             return reservarepository.save(reserva);
@@ -42,4 +46,17 @@ public class reservaservice {
         }
         return false;
     }
+
+    public List<reservamodel> getByUsuarioId(Long usuarioId) {
+        return reservarepository.findByUsuarioId(usuarioId);
+    }
+
+    public List<reservamodel> getByFecha(LocalDate fecha) {
+        return reservarepository.findByFecha(fecha);
+    }
+
+    public List<reservamodel> getByFechaBetween(LocalDate desde, LocalDate hasta) {
+        return reservarepository.findByFechaBetween(desde, hasta);
+    }
 }
+
