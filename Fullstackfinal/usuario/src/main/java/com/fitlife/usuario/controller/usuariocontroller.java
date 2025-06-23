@@ -31,36 +31,35 @@ public class usuariocontroller {
     }
 
     @PostMapping("/register/admin")
-    public ResponseEntity<?> registerAdmin(@RequestBody usuariomodel usuario, @RequestParam String adminKey) {
-        if (!"ADMIN_SECRET".equals(adminKey)) {
-            Map<String, Object> res = new HashMap<>();
-            res.put("message", "Falta de permisos, usted será CLIENTE. Contacte soporte.");
-            usuario.setRol("CLIENTE");
-            return ResponseEntity.ok(usuarioservice.register(usuario));
-        }
+public ResponseEntity<?> registerAdmin(@RequestBody usuariomodel usuario, @RequestParam String adminKey) {
+    if (!"ADMIN_SECRET".equals(adminKey)) {
+        usuario.setRol("CLIENTE"); // Forzar CLIENTE si clave es mala
         return ResponseEntity.ok(usuarioservice.register(usuario));
     }
+    usuario.setRol("ADMIN"); // 👉 Forzar ADMIN aquí
+    return ResponseEntity.ok(usuarioservice.register(usuario));
+}
+   @PostMapping("/login")
+public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginData) {
+    String email = loginData.get("email");
+    String contrasena = loginData.get("contrasena");
 
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginData) {
-        String email = loginData.get("email");
-        String contrasena = loginData.get("contrasena");
-
-        usuariomodel user = usuarioservice.login(email, contrasena);
-        if (user != null) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Login OK ✅");
-            response.put("id", user.getId());
-            response.put("nombre", user.getNombre());
-            response.put("email", user.getEmail());
-            response.put("rol", user.getRol());
-            return ResponseEntity.ok(response);
-        } else {
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Credenciales inválidas ❌");
-            return ResponseEntity.status(401).body(response);
-        }
+    usuariomodel user = usuarioservice.login(email, contrasena);
+    if (user != null) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Login OK ✅");
+        response.put("id", user.getId());
+        response.put("nombre", user.getNombre());
+        response.put("email", user.getEmail());
+        response.put("rol", user.getRol());
+        return ResponseEntity.ok(response);
+    } else {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Credenciales inválidas ❌");
+        return ResponseEntity.status(401).body(response);
     }
+}
+
 
     // 🟢 Solo ADMIN y STAFF pueden ver todos los usuarios
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")

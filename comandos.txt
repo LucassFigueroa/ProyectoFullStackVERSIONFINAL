@@ -24,3 +24,55 @@ CLIENTE	🙋‍♂️ Solo usa servicios: reserva clases, ve su cuenta.
 
 RECOMENDACION LUCAS:
 "NO USAR XAMPP, ES PREFERIBLE MYSQLWORKBENCH Y LARAGON YA QUE EL CAMBIO DE PUERTO ES MAS FACIL DE HACER :3
+
+
+
+
+
+LOS DEL LUCARDO
+//-------------------------------------
+// 1️⃣ REGISTER (Cliente)
+//-------------------------------------
+{
+  "nombre": "Lucas",
+  "email": "luc@gmail.com",
+  "contrasena": "123412"
+}
+
+//-------------------------------------
+// 2️⃣ REGISTER (Admin con adminKey)
+// (Recuerda poner ?adminKey=ADMIN_SECRET en Swagger)
+//-------------------------------------
+{
+  "nombre": "AdminMaster2",
+  "email": "admin2@correo.com",
+  "contrasena": "admin123"
+}
+
+//-------------------------------------
+// 3️⃣ LOGIN
+//-------------------------------------
+{
+  "email": "luc@gmail.com",
+  "contrasena": "123412"
+}
+
+//-------------------------------------
+// 4️⃣ GET — no necesita body
+//-------------------------------------
+
+//-------------------------------------
+// 5️⃣ PUT — Actualizar usuario (ejemplo con Pedro)
+// Cambia "id" al correcto si lo necesitas
+//-------------------------------------
+{
+  "id": 1,
+  "email": "pedro@correo.com",
+  "contrasena": "12345",
+  "nombre": "Pedro Modificado",
+  "rol": "CLIENTE"
+}
+
+//-------------------------------------
+// 6️⃣ DELETE — no necesita body
+//-------------------------------------
