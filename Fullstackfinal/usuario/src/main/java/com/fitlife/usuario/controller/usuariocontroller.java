@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -25,13 +26,12 @@ public class usuariocontroller {
     private usuarioservice usuarioservice;
 
     @PostMapping("/register")
-public usuariomodel register(@Valid @RequestBody usuariomodel usuario) {
-    return usuarioservice.register(usuario);
-}
+    public usuariomodel register(@Valid @RequestBody usuariomodel usuario) {
+        return usuarioservice.register(usuario);
+    }
 
     @PostMapping("/register/admin")
     public ResponseEntity<?> registerAdmin(@RequestBody usuariomodel usuario, @RequestParam String adminKey) {
-        // Solo permitir crear admin con clave maestra
         if (!"ADMIN_SECRET".equals(adminKey)) {
             Map<String, Object> res = new HashMap<>();
             res.put("message", "Falta de permisos, usted será CLIENTE. Contacte soporte.");
@@ -62,6 +62,8 @@ public usuariomodel register(@Valid @RequestBody usuariomodel usuario) {
         }
     }
 
+    // 🟢 Solo ADMIN y STAFF pueden ver todos los usuarios
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @GetMapping("/usuarios")
     public CollectionModel<EntityModel<usuariomodel>> getAll() {
         List<EntityModel<usuariomodel>> usuarios = usuarioservice.getAll().stream()
@@ -75,6 +77,8 @@ public usuariomodel register(@Valid @RequestBody usuariomodel usuario) {
                 linkTo(methodOn(usuariocontroller.class).getAll()).withSelfRel());
     }
 
+    // 🟢 Solo ADMIN y STAFF pueden ver uno
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @GetMapping("/usuarios/{id}")
     public ResponseEntity<EntityModel<usuariomodel>> getById(@PathVariable Long id) {
         usuariomodel usuario = usuarioservice.getById(id);
@@ -91,12 +95,16 @@ public usuariomodel register(@Valid @RequestBody usuariomodel usuario) {
         }
     }
 
+    // 🟢 Solo ADMIN puede actualizar
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/usuarios/{id}")
     public ResponseEntity<usuariomodel> update(@PathVariable Long id, @Valid @RequestBody usuariomodel details) {
         usuariomodel updated = usuarioservice.update(id, details);
         return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
     }
 
+    // 🟢 Solo ADMIN puede eliminar
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/usuarios/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         boolean deleted = usuarioservice.delete(id);

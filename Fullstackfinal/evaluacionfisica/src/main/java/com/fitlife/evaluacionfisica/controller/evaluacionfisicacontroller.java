@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,8 @@ public class evaluacionfisicacontroller {
     @Autowired
     private evaluacionfisicaservice evaluacionfisicaservice;
 
+    // Solo ADMIN y STAFF pueden crear evaluaciones físicas
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @PostMapping
     public ResponseEntity<EntityModel<evaluacionfisica>> createEvaluacion(@RequestBody evaluacionfisica evaluacion) {
         evaluacionfisica saved = evaluacionfisicaservice.saveEvaluacion(evaluacion);
@@ -29,6 +32,8 @@ public class evaluacionfisicacontroller {
         return ResponseEntity.ok(resource);
     }
 
+    // ADMIN, STAFF y CLIENTE pueden ver todas
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
     @GetMapping
     public CollectionModel<EntityModel<evaluacionfisica>> getAllEvaluaciones() {
         List<EntityModel<evaluacionfisica>> evaluaciones = evaluacionfisicaservice.getAllEvaluaciones().stream()
@@ -39,6 +44,8 @@ public class evaluacionfisicacontroller {
                 linkTo(methodOn(evaluacionfisicacontroller.class).getAllEvaluaciones()).withSelfRel());
     }
 
+    // ADMIN, STAFF y CLIENTE pueden ver una
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
     @GetMapping("/{id}")
     public ResponseEntity<EntityModel<evaluacionfisica>> getEvaluacionById(@PathVariable Long id) {
         evaluacionfisica ev = evaluacionfisicaservice.getEvaluacionById(id);
@@ -52,12 +59,16 @@ public class evaluacionfisicacontroller {
         }
     }
 
+    // Solo ADMIN y STAFF pueden actualizar
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @PutMapping("/{id}")
     public ResponseEntity<evaluacionfisica> updateEvaluacion(@PathVariable Long id, @RequestBody evaluacionfisica evaluacion) {
         evaluacionfisica updated = evaluacionfisicaservice.updateEvaluacion(id, evaluacion);
         return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
     }
 
+    // Solo ADMIN puede eliminar
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEvaluacion(@PathVariable Long id) {
         boolean deleted = evaluacionfisicaservice.deleteEvaluacion(id);

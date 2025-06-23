@@ -5,6 +5,7 @@ import com.fitlife.clase.service.claseservice;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +20,8 @@ public class clasecontroller {
     @Autowired
     private claseservice claseservice;
 
-    // Crear clase
+    // ✅ Crear clase: solo ADMIN o STAFF
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @PostMapping
     public EntityModel<clase> guardarClase(@RequestBody clase clase) {
         clase creada = claseservice.guardarClase(clase);
@@ -28,7 +30,8 @@ public class clasecontroller {
                 linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withRel("todas-las-clases"));
     }
 
-    // Obtener todas
+    // ✅ Ver todas: todos los roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
     @GetMapping
     public CollectionModel<EntityModel<clase>> obtenerTodasLasClases() {
         List<EntityModel<clase>> clases = claseservice.obtenerTodasLasClases().stream()
@@ -41,7 +44,8 @@ public class clasecontroller {
         return CollectionModel.of(clases, linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withSelfRel());
     }
 
-    // Obtener una por ID
+    // ✅ Ver una: todos los roles
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
     @GetMapping("/{id}")
     public EntityModel<clase> obtenerClasePorId(@PathVariable Long id) {
         clase encontrada = claseservice.obtenerClasePorId(id)
@@ -51,7 +55,8 @@ public class clasecontroller {
                 linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withRel("todas-las-clases"));
     }
 
-    // Actualizar
+    // ✅ Actualizar: ADMIN o STAFF
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @PutMapping("/{id}")
     public EntityModel<clase> actualizarClase(@PathVariable Long id, @RequestBody clase claseDetails) {
         clase actualizada = claseservice.actualizarClase(id, claseDetails);
@@ -59,7 +64,8 @@ public class clasecontroller {
                 linkTo(methodOn(clasecontroller.class).obtenerClasePorId(id)).withSelfRel());
     }
 
-    // Eliminar
+    // ✅ Eliminar: solo ADMIN
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public void eliminarClase(@PathVariable Long id) {
         claseservice.eliminarClase(id);

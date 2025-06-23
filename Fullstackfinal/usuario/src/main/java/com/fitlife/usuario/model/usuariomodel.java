@@ -19,7 +19,7 @@ public class usuariomodel {
     private String email;
 
     @Column(nullable = false)
-    private String contrasena;
+    private String contrasena; //se encrippta
 
     @Column(nullable = false, length = 50)
     private String nombre;

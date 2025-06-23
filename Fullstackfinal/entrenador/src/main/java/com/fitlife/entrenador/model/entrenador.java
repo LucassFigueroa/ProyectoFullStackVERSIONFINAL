@@ -19,7 +19,7 @@ public class entrenador {
     private String nombre;
 
     @Column(nullable = false)
-    private String especialidad;
+    private String especialidad; //
 
     @Column(nullable = false)
     private String experiencia; // años de experiencia
