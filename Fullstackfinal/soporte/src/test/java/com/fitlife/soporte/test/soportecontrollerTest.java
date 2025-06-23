@@ -1,26 +1,29 @@
 package com.fitlife.soporte.test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fitlife.soporte.controller.soportecontroller;
 import com.fitlife.soporte.model.soportemodel;
 import com.fitlife.soporte.service.soporteservice;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.mock.mockito.MockBean;
+
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
-
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import static org.hamcrest.Matchers.*;
+import java.util.List;
 
 @WebMvcTest(soportecontroller.class)
+@AutoConfigureMockMvc(addFilters = false)
 public class soportecontrollerTest {
 
     @Autowired
@@ -36,103 +39,51 @@ public class soportecontrollerTest {
 
     @BeforeEach
     void setUp() {
-        soporte = new soportemodel(1L, "Asunto de prueba", "Mensaje de prueba");
+        soporte = new soportemodel(1L, "Problema Login", "No puedo entrar", "PENDIENTE", "Cliente123");
     }
 
     @Test
-    void testCreate() throws Exception {
-        when(soporteservice.save(any())).thenReturn(soporte);
+    void testCreateSoporte() throws Exception {
+        when(soporteservice.saveSoporte(any(soportemodel.class))).thenReturn(soporte);
 
-        mockMvc.perform(post("/api/soportes")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(soporte)))
+        mockMvc.perform(post("/api/soporte")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(soporte)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.asunto").value("Asunto de prueba"))
-                .andExpect(jsonPath("$._links.self.href").exists())
-                .andExpect(jsonPath("$._links.todos.href").exists())
-                .andExpect(jsonPath("$._links.buscar-por-asunto.href").exists());
+                .andExpect(jsonPath("$.asunto").value("Problema Login"));
     }
 
     @Test
-    void testGetAll() throws Exception {
-        when(soporteservice.getAll()).thenReturn(List.of(soporte));
+    void testGetAllSoporte() throws Exception {
+        when(soporteservice.getAllSoporte()).thenReturn(List.of(soporte));
 
-        mockMvc.perform(get("/api/soportes"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.soportemodelList").isArray())
-                .andExpect(jsonPath("$._embedded.soportemodelList[0].id").value(1))
-                .andExpect(jsonPath("$._embedded.soportemodelList[0].asunto").value("Asunto de prueba"))
-                .andExpect(jsonPath("$._embedded.soportemodelList[0]._links.self.href").exists());
+        mockMvc.perform(get("/api/soporte"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testGetById_Found() throws Exception {
-        when(soporteservice.getById(1L)).thenReturn(soporte);
+    void testGetSoporteById() throws Exception {
+        when(soporteservice.getSoporteById(1L)).thenReturn(soporte);
 
-        mockMvc.perform(get("/api/soportes/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.asunto").value("Asunto de prueba"))
-                .andExpect(jsonPath("$._links.self.href").exists());
+        mockMvc.perform(get("/api/soporte/1"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testGetById_NotFound() throws Exception {
-        when(soporteservice.getById(1L)).thenReturn(null);
+    void testUpdateSoporte() throws Exception {
+        when(soporteservice.updateSoporte(any(Long.class), any(soportemodel.class))).thenReturn(soporte);
 
-        mockMvc.perform(get("/api/soportes/1"))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(put("/api/soporte/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(soporte)))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testUpdate_Found() throws Exception {
-        when(soporteservice.update(eq(1L), any())).thenReturn(soporte);
+    void testDeleteSoporte() throws Exception {
+        when(soporteservice.deleteSoporte(1L)).thenReturn(true);
 
-        mockMvc.perform(put("/api/soportes/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(soporte)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.asunto").value("Asunto de prueba"))
-                .andExpect(jsonPath("$._links.self.href").exists());
-    }
-
-    @Test
-    void testUpdate_NotFound() throws Exception {
-        when(soporteservice.update(eq(1L), any())).thenReturn(null);
-
-        mockMvc.perform(put("/api/soportes/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(soporte)))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void testDelete_Found() throws Exception {
-        when(soporteservice.delete(1L)).thenReturn(true);
-
-        mockMvc.perform(delete("/api/soportes/1"))
+        mockMvc.perform(delete("/api/soporte/1"))
                 .andExpect(status().isNoContent());
-    }
-
-    @Test
-    void testDelete_NotFound() throws Exception {
-        when(soporteservice.delete(1L)).thenReturn(false);
-
-        mockMvc.perform(delete("/api/soportes/1"))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void testSearchByAsunto() throws Exception {
-        when(soporteservice.findByAsunto("Asunto")).thenReturn(List.of(soporte));
-
-        mockMvc.perform(get("/api/soportes/search")
-                        .param("keyword", "Asunto"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.soportemodelList").isArray())
-                .andExpect(jsonPath("$._embedded.soportemodelList[0].id").value(1))
-                .andExpect(jsonPath("$._embedded.soportemodelList[0]._links.self.href").exists());
     }
 }

@@ -13,35 +13,33 @@ public class soporteservice {
     @Autowired
     private soporterepository soporterepository;
 
-    public soportemodel save(soportemodel soporte) {
+    public soportemodel saveSoporte(soportemodel soporte) {
         return soporterepository.save(soporte);
     }
 
-    public List<soportemodel> getAll() {
+    public List<soportemodel> getAllSoporte() {
         return soporterepository.findAll();
     }
 
-    public soportemodel getById(Long id) {
+    public soportemodel getSoporteById(Long id) {
         return soporterepository.findById(id).orElse(null);
     }
 
-    public soportemodel update(Long id, soportemodel details) {
-        return soporterepository.findById(id).map(soporte -> {
-            soporte.setAsunto(details.getAsunto());
-            soporte.setMensaje(details.getMensaje());
-            return soporterepository.save(soporte);
+    public soportemodel updateSoporte(Long id, soportemodel details) {
+        return soporterepository.findById(id).map(s -> {
+            s.setAsunto(details.getAsunto());
+            s.setDescripcion(details.getDescripcion());
+            s.setEstado(details.getEstado());
+            s.setCliente(details.getCliente());
+            return soporterepository.save(s);
         }).orElse(null);
     }
 
-    public boolean delete(Long id) {
+    public boolean deleteSoporte(Long id) {
         if (soporterepository.existsById(id)) {
             soporterepository.deleteById(id);
             return true;
         }
         return false;
-    }
-
-    public List<soportemodel> findByAsunto(String keyword) {
-        return soporterepository.findByAsuntoContainingIgnoreCase(keyword);
     }
 }

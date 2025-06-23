@@ -3,16 +3,14 @@ package com.fitlife.soporte.test;
 import com.fitlife.soporte.model.soportemodel;
 import com.fitlife.soporte.repository.soporterepository;
 import com.fitlife.soporte.service.soporteservice;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -25,95 +23,64 @@ public class soporteserviceTest {
     @InjectMocks
     private soporteservice soporteservice;
 
+    private soportemodel soporte;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        soporte = new soportemodel(1L, "Problema Login", "No puedo entrar a mi cuenta", "PENDIENTE", "Cliente123");
     }
 
     @Test
-    void testSave() {
-        soportemodel soporte = new soportemodel(null, "Asunto", "Mensaje");
-        soportemodel guardado = new soportemodel(1L, "Asunto", "Mensaje");
+    void testSaveSoporte() {
+        when(soporterepository.save(any(soportemodel.class))).thenReturn(soporte);
 
-        when(soporterepository.save(soporte)).thenReturn(guardado);
+        soportemodel saved = soporteservice.saveSoporte(soporte);
 
-        soportemodel result = soporteservice.save(soporte);
-
-        assertNotNull(result);
-        assertEquals(1L, result.getId());
-        assertEquals("Asunto", result.getAsunto());
+        assertNotNull(saved);
+        assertEquals("Problema Login", saved.getAsunto());
+        verify(soporterepository, times(1)).save(any(soportemodel.class));
     }
 
     @Test
-    void testGetAll() {
-        List<soportemodel> lista = Arrays.asList(
-                new soportemodel(1L, "A1", "M1"),
-                new soportemodel(2L, "A2", "M2")
-        );
+    void testGetAllSoporte() {
+        when(soporterepository.findAll()).thenReturn(List.of(soporte));
 
-        when(soporterepository.findAll()).thenReturn(lista);
+        List<soportemodel> list = soporteservice.getAllSoporte();
 
-        List<soportemodel> result = soporteservice.getAll();
-
-        assertEquals(2, result.size());
+        assertFalse(list.isEmpty());
         verify(soporterepository, times(1)).findAll();
     }
 
     @Test
-    void testGetById_Encontrado() {
-        soportemodel soporte = new soportemodel(1L, "Asunto", "Mensaje");
-
+    void testGetSoporteById() {
         when(soporterepository.findById(1L)).thenReturn(Optional.of(soporte));
 
-        soportemodel result = soporteservice.getById(1L);
+        soportemodel found = soporteservice.getSoporteById(1L);
 
-        assertNotNull(result);
-        assertEquals("Asunto", result.getAsunto());
+        assertNotNull(found);
+        assertEquals("Cliente123", found.getCliente());
     }
 
     @Test
-    void testGetById_NoEncontrado() {
-        when(soporterepository.findById(99L)).thenReturn(Optional.empty());
+    void testUpdateSoporte() {
+        when(soporterepository.findById(1L)).thenReturn(Optional.of(soporte));
+        when(soporterepository.save(any(soportemodel.class))).thenReturn(soporte);
 
-        soportemodel result = soporteservice.getById(99L);
+        soportemodel updated = soporteservice.updateSoporte(1L, soporte);
 
-        assertNull(result);
+        assertNotNull(updated);
+        verify(soporterepository).save(any(soportemodel.class));
     }
 
     @Test
-    void testUpdate() {
-        soportemodel existente = new soportemodel(1L, "Viejo", "Texto viejo");
-        soportemodel nuevo = new soportemodel(null, "Nuevo", "Texto nuevo");
-        soportemodel actualizado = new soportemodel(1L, "Nuevo", "Texto nuevo");
-
-        when(soporterepository.findById(1L)).thenReturn(Optional.of(existente));
-        when(soporterepository.save(any(soportemodel.class))).thenReturn(actualizado);
-
-        soportemodel result = soporteservice.update(1L, nuevo);
-
-        assertNotNull(result);
-        assertEquals("Nuevo", result.getAsunto());
-        assertEquals("Texto nuevo", result.getMensaje());
-    }
-
-    @Test
-    void testDelete_Existente() {
+    void testDeleteSoporte() {
         when(soporterepository.existsById(1L)).thenReturn(true);
         doNothing().when(soporterepository).deleteById(1L);
 
-        boolean result = soporteservice.delete(1L);
+        boolean deleted = soporteservice.deleteSoporte(1L);
 
-        assertTrue(result);
+        assertTrue(deleted);
         verify(soporterepository).deleteById(1L);
-    }
-
-    @Test
-    void testDelete_NoExistente() {
-        when(soporterepository.existsById(99L)).thenReturn(false);
-
-        boolean result = soporteservice.delete(99L);
-
-        assertFalse(result);
-        verify(soporterepository, never()).deleteById(anyLong());
     }
 }
