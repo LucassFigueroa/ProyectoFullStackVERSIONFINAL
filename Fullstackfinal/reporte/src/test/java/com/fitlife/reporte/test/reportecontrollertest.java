@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Collections;
@@ -32,19 +34,21 @@ public class reportecontrollertest {
         MockitoAnnotations.openMocks(this);
         reporte = new reportemodel();
         reporte.setId(id);
+        reporte.setTipo("Asistencia");
     }
 
     @Test
     void testGetById_found() {
         when(reporteservice.getById(id)).thenReturn(reporte);
 
-        ResponseEntity<reportemodel> response = reportecontroller.getById(id);
-        reportemodel resultado = response.getBody();
+        ResponseEntity<EntityModel<reportemodel>> response = reportecontroller.getById(id);
+        EntityModel<reportemodel> entityModel = response.getBody();
 
         assertNotNull(response);
         assertEquals(200, response.getStatusCodeValue());
-        assertNotNull(resultado);
-        assertEquals(id, resultado.getId());
+        assertNotNull(entityModel);
+        assertNotNull(entityModel.getContent());
+        assertEquals(id, entityModel.getContent().getId());
         verify(reporteservice).getById(id);
     }
 
@@ -52,7 +56,7 @@ public class reportecontrollertest {
     void testGetById_notFound() {
         when(reporteservice.getById(999L)).thenReturn(null);
 
-        ResponseEntity<reportemodel> response = reportecontroller.getById(999L);
+        ResponseEntity<EntityModel<reportemodel>> response = reportecontroller.getById(999L);
 
         assertNotNull(response);
         assertEquals(404, response.getStatusCodeValue());
@@ -65,10 +69,12 @@ public class reportecontrollertest {
         List<reportemodel> lista = Collections.singletonList(reporte);
         when(reporteservice.getAll()).thenReturn(lista);
 
-        List<reportemodel> resultado = reportecontroller.getAll(null, null);
+        CollectionModel<EntityModel<reportemodel>> resultado = reportecontroller.getAll(null, null);
 
         assertNotNull(resultado);
-        assertEquals(1, resultado.size());
+        List<EntityModel<reportemodel>> content = resultado.getContent().stream().toList();
+        assertEquals(1, content.size());
+        assertEquals(id, content.get(0).getContent().getId());
         verify(reporteservice).getAll();
     }
 }
