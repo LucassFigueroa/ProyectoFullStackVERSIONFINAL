@@ -1,11 +1,10 @@
 package com.fitlife.reserva.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -13,28 +12,29 @@ import java.time.LocalTime;
 @Entity
 @Table(name = "reservas")
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class reservamodel {
+@AllArgsConstructor
+@Builder
+public class reserva {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "El ID del usuario no puede ser nulo")
+    @NotBlank(message = "El nombre del cliente es obligatorio")
     @Column(nullable = false)
-    private Long usuarioId;
-
-    @NotNull(message = "El ID de la clase no puede ser nulo")
-    @Column(nullable = false)
-    private Long claseId;
+    private String clienteNombre;
 
     @NotNull(message = "La fecha es obligatoria")
-    @Future(message = "La fecha debe ser futura")
+    @FutureOrPresent(message = "La fecha no puede ser en el pasado")
     @Column(nullable = false)
     private LocalDate fecha;
 
     @NotNull(message = "La hora es obligatoria")
     @Column(nullable = false)
     private LocalTime hora;
+
+    @NotBlank(message = "El estado es obligatorio")
+    @Column(nullable = false)
+    private String estado;
 }

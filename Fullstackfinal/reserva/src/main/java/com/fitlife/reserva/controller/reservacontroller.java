@@ -1,24 +1,21 @@
 package com.fitlife.reserva.controller;
 
-import com.fitlife.reserva.model.reservamodel;
+import com.fitlife.reserva.model.reserva;
 import com.fitlife.reserva.service.reservaservice;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
-@Tag(name = "Reservas", description = "Operaciones relacionadas con reservas")
 @RestController
 @RequestMapping("/api/reservas")
 public class reservacontroller {
@@ -26,97 +23,68 @@ public class reservacontroller {
     @Autowired
     private reservaservice reservaservice;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
     @PostMapping
-    @Operation(summary = "Crear una nueva reserva")
-    public ResponseEntity<?> create(@Valid @RequestBody reservamodel reserva) {
-        try {
-            reservamodel saved = reservaservice.save(reserva);
-            return ResponseEntity.ok(toModel(saved));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(ex.getMessage());
+    public ResponseEntity<EntityModel<reserva>> createReserva(@Valid @RequestBody reserva reserva, Authentication auth) {
+        if(auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CLIENTE"))){
+            reserva.setClienteNombre(auth.getName());
         }
+        reserva saved = reservaservice.saveReserva(reserva);
+        EntityModel<reserva> resource = toModel(saved);
+        return ResponseEntity.ok(resource);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
     @GetMapping
-    @Operation(summary = "Listar todas las reservas")
-    public CollectionModel<EntityModel<reservamodel>> getAll() {
-        List<reservamodel> reservas = reservaservice.getAll();
+    public CollectionModel<EntityModel<reserva>> getAllReservas(Authentication auth) {
+        List<reserva> lista;
 
-        List<EntityModel<reservamodel>> reservasConLinks = reservas.stream()
-            .map(this::toModel)
-            .collect(Collectors.toList());
+        if(auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CLIENTE"))){
+            lista = reservaservice.getReservasByClienteNombre(auth.getName());
+        } else {
+            lista = reservaservice.getAllReservas();
+        }
 
-        return CollectionModel.of(reservasConLinks,
-            linkTo(methodOn(reservacontroller.class).getAll()).withSelfRel());
+        List<EntityModel<reserva>> reservas = lista.stream()
+                .map(this::toModel)
+                .collect(Collectors.toList());
+
+        return CollectionModel.of(reservas,
+                linkTo(methodOn(reservacontroller.class).getAllReservas(auth)).withSelfRel());
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener una reserva por ID")
-    public ResponseEntity<EntityModel<reservamodel>> getById(@PathVariable Long id) {
-        reservamodel reserva = reservaservice.getById(id);
-        return reserva != null
-            ? ResponseEntity.ok(toModel(reserva))
-            : ResponseEntity.notFound().build();
+    public ResponseEntity<EntityModel<reserva>> getReservaById(@PathVariable Long id, Authentication auth) {
+        return reservaservice.getReservaById(id)
+                .filter(res -> {
+                    if(auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CLIENTE"))){
+                        return res.getClienteNombre().equals(auth.getName());
+                    }
+                    return true;
+                })
+                .map(res -> ResponseEntity.ok(toModel(res)))
+                .orElse(ResponseEntity.status(403).build());
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @PutMapping("/{id}")
-    @Operation(summary = "Actualizar una reserva")
-    public ResponseEntity<EntityModel<reservamodel>> update(@PathVariable Long id, @Valid @RequestBody reservamodel details) {
-        reservamodel updated = reservaservice.update(id, details);
-        return updated != null
-            ? ResponseEntity.ok(toModel(updated))
-            : ResponseEntity.notFound().build();
+    public ResponseEntity<reserva> updateReserva(@PathVariable Long id, @Valid @RequestBody reserva reserva) {
+        reserva updated = reservaservice.updateReserva(id, reserva);
+        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar una reserva")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        return reservaservice.delete(id)
-            ? ResponseEntity.noContent().build()
-            : ResponseEntity.notFound().build();
+    public ResponseEntity<Void> deleteReserva(@PathVariable Long id) {
+        boolean deleted = reservaservice.deleteReserva(id);
+        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
 
-    @GetMapping("/usuario/{usuarioId}")
-    @Operation(summary = "Obtener reservas por ID de usuario")
-    public CollectionModel<EntityModel<reservamodel>> getByUsuarioId(@PathVariable Long usuarioId) {
-        List<EntityModel<reservamodel>> reservas = reservaservice.getByUsuarioId(usuarioId)
-            .stream().map(this::toModel).toList();
-
-        return CollectionModel.of(reservas,
-            linkTo(methodOn(reservacontroller.class).getByUsuarioId(usuarioId)).withSelfRel());
-    }
-
-    @GetMapping("/fecha")
-    @Operation(summary = "Obtener reservas por fecha")
-    public CollectionModel<EntityModel<reservamodel>> getByFecha(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
-
-        List<EntityModel<reservamodel>> reservas = reservaservice.getByFecha(fecha)
-            .stream().map(this::toModel).toList();
-
-        return CollectionModel.of(reservas,
-            linkTo(methodOn(reservacontroller.class).getByFecha(fecha)).withSelfRel());
-    }
-
-    @GetMapping("/rango")
-    @Operation(summary = "Obtener reservas por rango de fechas")
-    public CollectionModel<EntityModel<reservamodel>> getByFechaBetween(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
-
-        List<EntityModel<reservamodel>> reservas = reservaservice.getByFechaBetween(desde, hasta)
-            .stream().map(this::toModel).toList();
-
-        return CollectionModel.of(reservas,
-            linkTo(methodOn(reservacontroller.class).getByFechaBetween(desde, hasta)).withSelfRel());
-    }
-
-    private EntityModel<reservamodel> toModel(reservamodel reserva) {
-        return EntityModel.of(reserva,
-            linkTo(methodOn(reservacontroller.class).getById(reserva.getId())).withSelfRel(),
-            linkTo(methodOn(reservacontroller.class).getAll()).withRel("reservas"),
-            linkTo(methodOn(reservacontroller.class).getByUsuarioId(reserva.getUsuarioId())).withRel("usuario"),
-            linkTo(methodOn(reservacontroller.class).getByFecha(reserva.getFecha())).withRel("fecha")
-        );
+    // Método privado para crear EntityModel sin pasar Authentication (evita error HATEOAS)
+    private EntityModel<reserva> toModel(reserva res) {
+        return EntityModel.of(res,
+                linkTo(methodOn(reservacontroller.class).getReservaById(res.getId(), null)).withSelfRel(),
+                linkTo(methodOn(reservacontroller.class).getAllReservas(null)).withRel("all-reservas"));
     }
 }

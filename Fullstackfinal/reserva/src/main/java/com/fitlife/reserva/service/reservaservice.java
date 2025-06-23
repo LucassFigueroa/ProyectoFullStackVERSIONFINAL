@@ -1,12 +1,12 @@
 package com.fitlife.reserva.service;
 
-import com.fitlife.reserva.model.reservamodel;
+import com.fitlife.reserva.model.reserva;
 import com.fitlife.reserva.repository.reservarepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class reservaservice {
@@ -14,32 +14,29 @@ public class reservaservice {
     @Autowired
     private reservarepository reservarepository;
 
-    public reservamodel save(reservamodel reserva) {
-        if (reservarepository.existsByUsuarioIdAndFechaAndHora(reserva.getUsuarioId(), reserva.getFecha(), reserva.getHora())) {
-            throw new IllegalArgumentException("Ya tienes una reserva en ese horario.");
-        }
+    public reserva saveReserva(reserva reserva) {
         return reservarepository.save(reserva);
     }
 
-    public List<reservamodel> getAll() {
+    public List<reserva> getAllReservas() {
         return reservarepository.findAll();
     }
 
-    public reservamodel getById(Long id) {
-        return reservarepository.findById(id).orElse(null);
+    public Optional<reserva> getReservaById(Long id) {
+        return reservarepository.findById(id);
     }
 
-    public reservamodel update(Long id, reservamodel details) {
-        return reservarepository.findById(id).map(reserva -> {
-            reserva.setUsuarioId(details.getUsuarioId());
-            reserva.setClaseId(details.getClaseId());
-            reserva.setFecha(details.getFecha());
-            reserva.setHora(details.getHora());
-            return reservarepository.save(reserva);
+    public reserva updateReserva(Long id, reserva details) {
+        return reservarepository.findById(id).map(r -> {
+            r.setClienteNombre(details.getClienteNombre());
+            r.setFecha(details.getFecha());
+            r.setHora(details.getHora());
+            r.setEstado(details.getEstado());
+            return reservarepository.save(r);
         }).orElse(null);
     }
 
-    public boolean delete(Long id) {
+    public boolean deleteReserva(Long id) {
         if (reservarepository.existsById(id)) {
             reservarepository.deleteById(id);
             return true;
@@ -47,16 +44,7 @@ public class reservaservice {
         return false;
     }
 
-    public List<reservamodel> getByUsuarioId(Long usuarioId) {
-        return reservarepository.findByUsuarioId(usuarioId);
-    }
-
-    public List<reservamodel> getByFecha(LocalDate fecha) {
-        return reservarepository.findByFecha(fecha);
-    }
-
-    public List<reservamodel> getByFechaBetween(LocalDate desde, LocalDate hasta) {
-        return reservarepository.findByFechaBetween(desde, hasta);
+    public List<reserva> getReservasByClienteNombre(String clienteNombre) {
+        return reservarepository.findByClienteNombre(clienteNombre);
     }
 }
-
