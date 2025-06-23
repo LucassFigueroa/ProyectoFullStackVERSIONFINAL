@@ -7,16 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -27,51 +18,42 @@ import java.util.Map;
 @RequestMapping("/inventario")
 public class inventariocontroller {
 
-    @Autowired // Inyecta automaticamente el servicio y hace que Spring se encarge de crear las instancias 
+    @Autowired // Inyecta el servicio de inventario
     private inventarioservice inventarioService;
 
-    @PostMapping //Este método se ejecuta cuando el cliente hace un POST a /inventario
+    @PostMapping // Crear nuevo inventario (sin ID en body)
     public ResponseEntity<?> crearInventario(@Valid @RequestBody inventariomodel inventario, BindingResult result) {
         if (result.hasErrors()) {
-            Map<String, String> errores = new HashMap<>();// Crea un mapa con los errores y muestra mensajes al usuario 
-            result.getFieldErrors().forEach(error ->
-                    errores.put(error.getField(), error.getDefaultMessage())
-            );
+            Map<String, String> errores = new HashMap<>();
+            result.getFieldErrors().forEach(error -> errores.put(error.getField(), error.getDefaultMessage()));
             return ResponseEntity.badRequest().body(errores);
         }
-
         if (inventario.getId() != null) {
             return ResponseEntity.badRequest().body(Map.of("error", "No debes incluir el ID al crear un inventario."));
         }
-
         return ResponseEntity.ok(inventarioService.crearInventario(inventario));
     }
 
-    // En lista todos los registros 
-    @GetMapping
+    @GetMapping // Listar todos
     public List<inventariomodel> listarInventarios() {
         return inventarioService.listarInventarios();
     }
 
-    // get busca por ID
-    @GetMapping("/{id}")
+    @GetMapping("/{id}") // Buscar por ID
     public ResponseEntity<?> obtenerInventario(@PathVariable String id) {
         try {
             Long idLong = Long.parseLong(id);
             inventariomodel inventario = inventarioService.obtenerPorId(idLong);
             if (inventario == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Inventario no encontrado"));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Inventario no encontrado"));
             }
             return ResponseEntity.ok(inventario);
         } catch (NumberFormatException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "El ID proporcionado no es válido"));
+            return ResponseEntity.badRequest().body(Map.of("error", "El ID proporcionado no es válido"));
         }
     }
 
-    //PUT /inventario/{id}, actualiza la instancia existente
-    @PutMapping("/{id}")
+    @PutMapping("/{id}") // Actualizar existente
     public ResponseEntity<?> actualizarInventario(
             @PathVariable Long id,
             @Valid @RequestBody inventariomodel inventario,
@@ -79,42 +61,36 @@ public class inventariocontroller {
 
         if (result.hasErrors()) {
             Map<String, String> errores = new HashMap<>();
-            result.getFieldErrors().forEach(error ->
-                    errores.put(error.getField(), error.getDefaultMessage()));
+            result.getFieldErrors().forEach(error -> errores.put(error.getField(), error.getDefaultMessage()));
             return ResponseEntity.badRequest().body(errores);
         }
-
+        inventario.setId(id); // Asegura el ID de la URL
         return ResponseEntity.ok(inventarioService.actualizarInventario(id, inventario));
     }
 
-    //elimina registro por Id
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id}") // Eliminar por ID
     public ResponseEntity<?> eliminarInventario(@PathVariable Long id) {
         inventarioService.eliminarInventario(id);
         return ResponseEntity.noContent().build();
     }
 
-    //busca por nombre parcialmente
-    @GetMapping("/buscarNombre")
+    @GetMapping("/buscarNombre") // Buscar por nombre parcial
     public List<inventariomodel> buscarPorNombre(@RequestParam String nombre) {
         return inventarioService.buscarPorNombre(nombre);
     }
 
-    //busca por estado
-    @GetMapping("/buscarEstado")
+    @GetMapping("/buscarEstado") // Buscar por estado
     public List<inventariomodel> buscarPorEstado(@RequestParam String estado) {
         return inventarioService.buscarPorEstado(estado);
     }
 
-    //busca por fecha exacta
-    @GetMapping("/buscarFecha")
+    @GetMapping("/buscarFecha") // Buscar por fecha exacta
     public List<inventariomodel> buscarPorFecha(@RequestParam String fecha) {
         LocalDate date = LocalDate.parse(fecha);
         return inventarioService.buscarPorFecha(date);
     }
 
-    //busca por rango de fechas 
-    @GetMapping("/buscarRango")
+    @GetMapping("/buscarRango") // Buscar por rango de fechas
     public List<inventariomodel> buscarPorRangoFecha(
             @RequestParam String desde,
             @RequestParam String hasta) {
@@ -123,15 +99,28 @@ public class inventariocontroller {
         return inventarioService.buscarPorRangoFecha(d1, d2);
     }
 
-    //get buscar  nombre y estado 
-    @GetMapping("/buscarAvanzado")
+    @GetMapping("/buscarAvanzado") // Buscar por nombre + estado
     public List<inventariomodel> buscarPorNombreYEstado(
             @RequestParam String nombre,
             @RequestParam String estado) {
         return inventarioService.buscarPorNombreYEstado(nombre, estado);
     }
 
-    //Error si JSON está mal escrito
+    @GetMapping("/buscarSerieExacta") // Buscar por número de serie exacto
+    public ResponseEntity<?> buscarPorNumeroSerie(@RequestParam String serie) {
+        inventariomodel encontrado = inventarioService.buscarPorNumeroSerie(serie);
+        if (encontrado == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Número de serie no encontrado"));
+        }
+        return ResponseEntity.ok(encontrado);
+    }
+
+    @GetMapping("/buscarSerieParcial") // Buscar lista por número de serie parcial
+    public List<inventariomodel> buscarPorNumeroSerieParcial(@RequestParam String serie) {
+        return inventarioService.buscarPorNumeroSerieParcial(serie);
+    }
+
     @ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class})
     public ResponseEntity<?> manejarErroresDeDeserializacion(Exception ex) {
         return ResponseEntity.badRequest().body(Map.of(

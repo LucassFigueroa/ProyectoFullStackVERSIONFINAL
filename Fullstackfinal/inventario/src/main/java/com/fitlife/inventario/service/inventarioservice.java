@@ -37,7 +37,7 @@ public class inventarioservice {
         if (!inventarioRepository.existsById(id)) {
             throw new IllegalArgumentException("No existe el ID " + id);
         }
-        inventario.setId(id);
+        inventario.setId(id); // Forzar coherencia con la URL
         return inventarioRepository.save(inventario);
     }
 
@@ -51,7 +51,7 @@ public class inventarioservice {
         return inventarioRepository.findByNombreArticuloContainingIgnoreCase(nombre);
     }
 
-    // Buscar por estado (Funcional, Inservible, etc.)
+    // Buscar por estado
     public List<inventariomodel> buscarPorEstado(String estado) {
         return inventarioRepository.findByEstadoIgnoreCase(estado);
     }
@@ -66,8 +66,18 @@ public class inventarioservice {
         return inventarioRepository.findByFechaIngresoBetween(desde, hasta);
     }
 
-    // Buscar combinando nombre + estado
+    // Buscar por nombre + estado
     public List<inventariomodel> buscarPorNombreYEstado(String nombre, String estado) {
         return inventarioRepository.findByNombreArticuloContainingIgnoreCaseAndEstadoIgnoreCase(nombre, estado);
+    }
+
+    // Buscar uno por número de serie exacto
+    public inventariomodel buscarPorNumeroSerie(String numeroSerie) {
+        return inventarioRepository.findByNumeroSerie(numeroSerie);
+    }
+
+    // Buscar lista por coincidencia parcial de número de serie
+    public List<inventariomodel> buscarPorNumeroSerieParcial(String numeroSerie) {
+        return inventarioRepository.findByNumeroSerieContainingIgnoreCase(numeroSerie);
     }
 }

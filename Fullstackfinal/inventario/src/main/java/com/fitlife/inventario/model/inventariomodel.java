@@ -22,23 +22,28 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "inventario") 
+@Table(name = "inventario")
 public class inventariomodel {
 
-    @Id // Clave primaria autoincremental
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotBlank(message = "El nombre del artículo es obligatorio")
-    @Size(max = 20)
-    @Column(name = "nombre_articulo", nullable = false, length = 20)
+    @Size(max = 50)
+    @Column(name = "nombre_articulo", nullable = false, length = 50)
     private String nombreArticulo;
+
+    @NotBlank(message = "El número de serie es obligatorio")
+    @Size(max = 30)
+    @Column(name = "numero_serie", nullable = false, unique = true, length = 30)
+    private String numeroSerie;
 
     @Min(value = 0)
     @Column(nullable = false)
     private Integer cantidad;
 
-    @NotBlank(message = "El estado en que esta es obligatorio")
+    @NotBlank(message = "El estado es obligatorio")
     @Size(max = 20)
     @Column(nullable = false, length = 20)
     private String estado;
