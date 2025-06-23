@@ -2,70 +2,65 @@ package com.fitlife.evaluacionfisica.controller;
 
 import com.fitlife.evaluacionfisica.model.evaluacionfisica;
 import com.fitlife.evaluacionfisica.service.evaluacionfisicaservice;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
-@Tag(name = "Evaluaciones físicas", description = "CRUD y filtros para evaluaciones físicas")
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/evaluaciones")
 public class evaluacionfisicacontroller {
 
     @Autowired
     private evaluacionfisicaservice evaluacionfisicaservice;
 
-    @Operation(summary = "Crear nueva evaluación")
-    @PostMapping("/evaluaciones")
-    public evaluacionfisica create(@Valid @RequestBody evaluacionfisica evaluacion) {
-        return evaluacionfisicaservice.save(evaluacion);
+    @PostMapping
+    public ResponseEntity<EntityModel<evaluacionfisica>> createEvaluacion(@RequestBody evaluacionfisica evaluacion) {
+        evaluacionfisica saved = evaluacionfisicaservice.saveEvaluacion(evaluacion);
+        EntityModel<evaluacionfisica> resource = EntityModel.of(saved,
+                linkTo(methodOn(evaluacionfisicacontroller.class).getEvaluacionById(saved.getId())).withSelfRel(),
+                linkTo(methodOn(evaluacionfisicacontroller.class).getAllEvaluaciones()).withRel("all-evaluaciones"));
+        return ResponseEntity.ok(resource);
     }
 
-    @Operation(summary = "Obtener todas las evaluaciones")
-    @GetMapping("/evaluaciones")
-    public List<evaluacionfisica> getAll() {
-        return evaluacionfisicaservice.getAll();
+    @GetMapping
+    public CollectionModel<EntityModel<evaluacionfisica>> getAllEvaluaciones() {
+        List<EntityModel<evaluacionfisica>> evaluaciones = evaluacionfisicaservice.getAllEvaluaciones().stream()
+                .map(ev -> EntityModel.of(ev,
+                        linkTo(methodOn(evaluacionfisicacontroller.class).getEvaluacionById(ev.getId())).withSelfRel()))
+                .collect(Collectors.toList());
+        return CollectionModel.of(evaluaciones,
+                linkTo(methodOn(evaluacionfisicacontroller.class).getAllEvaluaciones()).withSelfRel());
     }
 
-    @Operation(summary = "Obtener evaluación por ID")
-    @GetMapping("/evaluaciones/{id}")
-    public ResponseEntity<evaluacionfisica> getById(@PathVariable Long id) {
-        evaluacionfisica evaluacion = evaluacionfisicaservice.getById(id);
-        return evaluacion != null ? ResponseEntity.ok(evaluacion) : ResponseEntity.notFound().build();
+    @GetMapping("/{id}")
+    public ResponseEntity<EntityModel<evaluacionfisica>> getEvaluacionById(@PathVariable Long id) {
+        evaluacionfisica ev = evaluacionfisicaservice.getEvaluacionById(id);
+        if (ev != null) {
+            EntityModel<evaluacionfisica> resource = EntityModel.of(ev,
+                    linkTo(methodOn(evaluacionfisicacontroller.class).getEvaluacionById(id)).withSelfRel(),
+                    linkTo(methodOn(evaluacionfisicacontroller.class).getAllEvaluaciones()).withRel("all-evaluaciones"));
+            return ResponseEntity.ok(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    @Operation(summary = "Actualizar evaluación por ID")
-    @PutMapping("/evaluaciones/{id}")
-    public ResponseEntity<evaluacionfisica> update(@PathVariable Long id, @Valid @RequestBody evaluacionfisica details) {
-        evaluacionfisica updated = evaluacionfisicaservice.update(id, details);
+    @PutMapping("/{id}")
+    public ResponseEntity<evaluacionfisica> updateEvaluacion(@PathVariable Long id, @RequestBody evaluacionfisica evaluacion) {
+        evaluacionfisica updated = evaluacionfisicaservice.updateEvaluacion(id, evaluacion);
         return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
     }
 
-    @Operation(summary = "Eliminar evaluación por ID")
-    @DeleteMapping("/evaluaciones/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        boolean deleted = evaluacionfisicaservice.delete(id);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEvaluacion(@PathVariable Long id) {
+        boolean deleted = evaluacionfisicaservice.deleteEvaluacion(id);
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
-    }
-
-    @Operation(summary = "Filtrar por usuario")
-    @GetMapping("/evaluaciones/usuario/{usuarioid}")
-    public List<evaluacionfisica> getByUsuarioId(@PathVariable Long usuarioid) {
-        return evaluacionfisicaservice.getByUsuarioId(usuarioid);
-    }
-
-    @Operation(summary = "Filtrar por rango de fechas")
-    @GetMapping("/evaluaciones/filtro/fechas")
-    public List<evaluacionfisica> getByFechaEvaluacionBetween(
-            @RequestParam String desde,
-            @RequestParam String hasta) {
-        LocalDate fechaDesde = LocalDate.parse(desde);
-        LocalDate fechaHasta = LocalDate.parse(hasta);
-        return evaluacionfisicaservice.getByFechaEvaluacionBetween(fechaDesde, fechaHasta);
     }
 }

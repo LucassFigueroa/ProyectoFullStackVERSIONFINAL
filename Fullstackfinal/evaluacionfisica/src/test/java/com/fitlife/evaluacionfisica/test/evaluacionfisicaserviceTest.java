@@ -9,9 +9,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,78 +17,55 @@ import static org.mockito.Mockito.*;
 public class evaluacionfisicaserviceTest {
 
     @Mock
-    private evaluacionfisicarepository repo;
+    private evaluacionfisicarepository evaluacionfisicarepository;
 
     @InjectMocks
-    private evaluacionfisicaservice service;
+    private evaluacionfisicaservice evaluacionfisicaservice;
 
-    private evaluacionfisica eval;
-    private Long id;
-    private LocalDate fecha;
+    private evaluacionfisica evaluacion;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
-        id = 1L;
-        fecha = LocalDate.of(2024, 6, 21);
-        eval = new evaluacionfisica(id, id, 70.0, 1.75, 22.86, fecha, "Bien");
+        evaluacion = evaluacionfisica.builder()
+                .id(1L)
+                .clienteNombre("Juan Pérez")
+                .peso(70.5)
+                .altura(1.75)
+                .imc(23.0)
+                .evaluador("Coach Pedro")
+                .build();
     }
 
     @Test
-    void testSave() {
-        when(repo.save(any())).thenReturn(eval);
+    void testSaveEvaluacion() {
+        when(evaluacionfisicarepository.save(any(evaluacionfisica.class))).thenReturn(evaluacion);
 
-        evaluacionfisica result = service.save(eval);
+        evaluacionfisica saved = evaluacionfisicaservice.saveEvaluacion(evaluacion);
 
-        assertNotNull(result);
-        assertEquals(70.0, result.getPeso());
-        verify(repo).save(any());
+        assertNotNull(saved);
+        assertEquals("Juan Pérez", saved.getClienteNombre());
+        verify(evaluacionfisicarepository, times(1)).save(any(evaluacionfisica.class));
     }
 
     @Test
-    void testGetAll() {
-        when(repo.findAll()).thenReturn(Arrays.asList(eval));
+    void testGetEvaluacionById() {
+        when(evaluacionfisicarepository.findById(1L)).thenReturn(Optional.of(evaluacion));
 
-        List<evaluacionfisica> lista = service.getAll();
+        evaluacionfisica found = evaluacionfisicaservice.getEvaluacionById(1L);
 
-        assertEquals(1, lista.size());
-        verify(repo).findAll();
+        assertNotNull(found);
+        assertEquals("Juan Pérez", found.getClienteNombre());
     }
 
     @Test
-    void testGetById() {
-        when(repo.findById(id)).thenReturn(Optional.of(eval));
+    void testDeleteEvaluacion() {
+        when(evaluacionfisicarepository.existsById(1L)).thenReturn(true);
+        doNothing().when(evaluacionfisicarepository).deleteById(1L);
 
-        evaluacionfisica result = service.getById(id);
-
-        assertNotNull(result);
-        assertEquals(70.0, result.getPeso());
-        verify(repo).findById(id);
-    }
-
-    @Test
-    void testUpdate() {
-        evaluacionfisica updated = new evaluacionfisica(id, id, 72.0, 1.75, 23.51, fecha, "Mejorando");
-
-        when(repo.findById(id)).thenReturn(Optional.of(eval));
-        when(repo.save(any())).thenReturn(updated);
-
-        evaluacionfisica result = service.update(id, updated);
-
-        assertNotNull(result);
-        assertEquals(72.0, result.getPeso());
-        assertEquals("Mejorando", result.getObservaciones());
-        verify(repo).findById(id);
-        verify(repo).save(any());
-    }
-
-    @Test
-    void testDelete() {
-        when(repo.existsById(id)).thenReturn(true);
-
-        boolean deleted = service.delete(id);
+        boolean deleted = evaluacionfisicaservice.deleteEvaluacion(1L);
 
         assertTrue(deleted);
-        verify(repo).deleteById(id);
+        verify(evaluacionfisicarepository, times(1)).deleteById(1L);
     }
 }

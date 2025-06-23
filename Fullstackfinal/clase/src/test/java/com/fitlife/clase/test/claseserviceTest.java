@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -49,6 +50,34 @@ public class claseserviceTest {
 
         assertTrue(found.isPresent());
         assertEquals("Yoga Power", found.get().getNombreClase());
+        verify(claserepository, times(1)).findById(1L);
+    }
+
+    @Test
+    void testObtenerTodasLasClases() {
+        when(claserepository.findAll()).thenReturn(List.of(claseEntity));
+
+        List<clase> clases = claseservice.obtenerTodasLasClases();
+
+        assertNotNull(clases);
+        assertEquals(1, clases.size());
+        assertEquals("Yoga Power", clases.get(0).getNombreClase());
+        verify(claserepository, times(1)).findAll();
+    }
+
+    @Test
+    void testActualizarClase() {
+        when(claserepository.findById(1L)).thenReturn(Optional.of(claseEntity));
+        when(claserepository.save(any(clase.class))).thenReturn(claseEntity);
+
+        clase updated = new clase(null, "Yoga Avanzado", "Nueva descripción", 75, 25, "Pro", 4L);
+
+        clase result = claseservice.actualizarClase(1L, updated);
+
+        assertNotNull(result);
+        assertEquals("Yoga Avanzado", result.getNombreClase());
+        assertEquals("Nueva descripción", result.getDescripcion());
+        verify(claserepository, times(1)).save(any(clase.class));
     }
 
     @Test

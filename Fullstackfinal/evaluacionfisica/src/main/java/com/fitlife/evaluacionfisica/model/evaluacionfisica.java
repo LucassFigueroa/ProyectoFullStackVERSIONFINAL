@@ -1,46 +1,37 @@
 package com.fitlife.evaluacionfisica.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "evaluaciones_fisicas")
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class evaluacionfisica {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
     @Column(nullable = false)
-    private Long usuarioid;
+    private String clienteNombre;
 
-    @Positive
     @Column(nullable = false)
     private Double peso;
 
-    @Positive
     @Column(nullable = false)
     private Double altura;
 
-    @Positive
     @Column(nullable = false)
     private Double imc;
 
-    @NotNull
     @Column(nullable = false)
-    private LocalDate fechaevaluacion;
+    private String evaluador;
 
-    @Size(max = 255)
-    private String observaciones;
+    @Column(nullable = false)
+    private LocalDate fechaevaluacion; // ✅ NUEVO CAMPO
 }

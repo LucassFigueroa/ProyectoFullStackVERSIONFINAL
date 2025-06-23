@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-
 import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
@@ -24,31 +23,43 @@ public class entrenadorserviceTest {
     @InjectMocks
     private entrenadorservice entrenadorservice;
 
-    private entrenador entrenadorEntity;
+    private entrenador entrenador;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
-        entrenadorEntity = new entrenador(1L, "Santiago", "Musculación");
+        entrenador = new entrenador(1L, "Pedro Gómez", "Yoga", "Senior");
     }
 
     @Test
-    void testCrearEntrenador() {
-        when(entrenadorrepository.save(any(entrenador.class))).thenReturn(entrenadorEntity);
+    void testSaveEntrenador() {
+        when(entrenadorrepository.save(any(entrenador.class))).thenReturn(entrenador);
 
-        entrenador result = entrenadorservice.crearEntrenador(entrenadorEntity);
+        entrenador saved = entrenadorservice.saveEntrenador(entrenador);
 
-        assertNotNull(result);
-        assertEquals("Santiago", result.getNombre());
+        assertNotNull(saved);
+        assertEquals("Pedro Gómez", saved.getNombre());
+        verify(entrenadorrepository, times(1)).save(any(entrenador.class));
     }
 
     @Test
-    void testObtenerEntrenadorPorId() {
-        when(entrenadorrepository.findById(eq(1L))).thenReturn(Optional.of(entrenadorEntity));
+    void testGetEntrenadorById() {
+        when(entrenadorrepository.findById(1L)).thenReturn(Optional.of(entrenador));
 
-        Optional<entrenador> result = entrenadorservice.obtenerEntrenadorPorId(1L);
+        entrenador found = entrenadorservice.getEntrenadorById(1L);
 
-        assertTrue(result.isPresent());
-        assertEquals("Santiago", result.get().getNombre());
+        assertNotNull(found);
+        assertEquals("Pedro Gómez", found.getNombre());
+    }
+
+    @Test
+    void testDeleteEntrenador() {
+        when(entrenadorrepository.existsById(1L)).thenReturn(true);
+        doNothing().when(entrenadorrepository).deleteById(1L);
+
+        boolean deleted = entrenadorservice.deleteEntrenador(1L);
+
+        assertTrue(deleted);
+        verify(entrenadorrepository, times(1)).deleteById(1L);
     }
 }

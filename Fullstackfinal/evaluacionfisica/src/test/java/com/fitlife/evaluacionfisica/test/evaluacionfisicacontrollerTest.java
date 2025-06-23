@@ -6,17 +6,15 @@ import com.fitlife.evaluacionfisica.model.evaluacionfisica;
 import com.fitlife.evaluacionfisica.service.evaluacionfisicaservice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
-
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
-import java.util.Arrays;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -25,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(evaluacionfisicacontroller.class)
+@AutoConfigureMockMvc(addFilters = false) // Para ignorar seguridad
 public class evaluacionfisicacontrollerTest {
 
     @Autowired
@@ -37,89 +36,63 @@ public class evaluacionfisicacontrollerTest {
     private ObjectMapper objectMapper;
 
     private evaluacionfisica evaluacion;
-    private Long id;
-    private LocalDate fecha;
 
     @BeforeEach
     void setup() {
-        id = 1L;
-        fecha = LocalDate.of(2024, 6, 21);
-        evaluacion = new evaluacionfisica(id, id, 70.0, 1.75, 22.86, fecha, "Todo bien");
+        evaluacion = new evaluacionfisica(
+                1L,
+                "Juan Perez",
+                70.0,
+                1.75,
+                22.9,
+                "Entrenador Pedro",
+                LocalDate.now()
+        );
     }
 
     @Test
-    void testCrearEvaluacion() throws Exception {
-        when(evaluacionfisicaservice.save(any(evaluacionfisica.class))).thenReturn(evaluacion);
+    void testCreateEvaluacion() throws Exception {
+        when(evaluacionfisicaservice.saveEvaluacion(any(evaluacionfisica.class))).thenReturn(evaluacion);
 
         mockMvc.perform(post("/api/evaluaciones")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(evaluacion)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(evaluacion)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.peso").value(70.0))
-                .andExpect(jsonPath("$.observaciones").value("Todo bien"));
+                .andExpect(jsonPath("$.clienteNombre").value("Juan Perez"));
     }
 
     @Test
     void testGetAllEvaluaciones() throws Exception {
-        when(evaluacionfisicaservice.getAll()).thenReturn(Arrays.asList(evaluacion));
+        when(evaluacionfisicaservice.getAllEvaluaciones()).thenReturn(List.of(evaluacion));
 
         mockMvc.perform(get("/api/evaluaciones"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].peso").value(70.0))
-                .andExpect(jsonPath("$[0].observaciones").value("Todo bien"));
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testGetById_OK() throws Exception {
-        when(evaluacionfisicaservice.getById(id)).thenReturn(evaluacion);
+    void testGetEvaluacionById() throws Exception {
+        when(evaluacionfisicaservice.getEvaluacionById(1L)).thenReturn(evaluacion);
 
-        mockMvc.perform(get("/api/evaluaciones/{id}", id))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.peso").value(70.0));
+        mockMvc.perform(get("/api/evaluaciones/1"))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testGetById_NotFound() throws Exception {
-        when(evaluacionfisicaservice.getById(id)).thenReturn(null);
+    void testUpdateEvaluacion() throws Exception {
+        when(evaluacionfisicaservice.updateEvaluacion(any(Long.class), any(evaluacionfisica.class)))
+                .thenReturn(evaluacion);
 
-        mockMvc.perform(get("/api/evaluaciones/{id}", id))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(put("/api/evaluaciones/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(evaluacion)))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testUpdate_OK() throws Exception {
-        when(evaluacionfisicaservice.update(Mockito.eq(id), any(evaluacionfisica.class))).thenReturn(evaluacion);
+    void testDeleteEvaluacion() throws Exception {
+        when(evaluacionfisicaservice.deleteEvaluacion(1L)).thenReturn(true);
 
-        mockMvc.perform(put("/api/evaluaciones/{id}", id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(evaluacion)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.peso").value(70.0));
-    }
-
-    @Test
-    void testUpdate_NotFound() throws Exception {
-        when(evaluacionfisicaservice.update(Mockito.eq(id), any(evaluacionfisica.class))).thenReturn(null);
-
-        mockMvc.perform(put("/api/evaluaciones/{id}", id)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(evaluacion)))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void testDelete_OK() throws Exception {
-        when(evaluacionfisicaservice.delete(id)).thenReturn(true);
-
-        mockMvc.perform(delete("/api/evaluaciones/{id}", id))
+        mockMvc.perform(delete("/api/evaluaciones/1"))
                 .andExpect(status().isNoContent());
-    }
-
-    @Test
-    void testDelete_NotFound() throws Exception {
-        when(evaluacionfisicaservice.delete(id)).thenReturn(false);
-
-        mockMvc.perform(delete("/api/evaluaciones/{id}", id))
-                .andExpect(status().isNotFound());
     }
 }

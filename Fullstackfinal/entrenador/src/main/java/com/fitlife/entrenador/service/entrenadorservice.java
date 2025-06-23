@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class entrenadorservice {
@@ -14,38 +13,32 @@ public class entrenadorservice {
     @Autowired
     private entrenadorrepository entrenadorrepository;
 
-    // Crear
-    public entrenador crearEntrenador(entrenador entrenador) {
+    public entrenador saveEntrenador(entrenador entrenador) {
         return entrenadorrepository.save(entrenador);
     }
 
-    // Obtener uno por ID
-    public Optional<entrenador> obtenerEntrenadorPorId(Long id) {
-        return entrenadorrepository.findById(id);
-    }
-
-    // Obtener todos
-    public List<entrenador> obtenerTodos() {
+    public List<entrenador> getAllEntrenadores() {
         return entrenadorrepository.findAll();
     }
 
-    // Actualizar
-    public entrenador actualizarEntrenador(Long id, entrenador detalles) {
+    public entrenador getEntrenadorById(Long id) {
+        return entrenadorrepository.findById(id).orElse(null);
+    }
+
+    public entrenador updateEntrenador(Long id, entrenador details) {
         return entrenadorrepository.findById(id).map(entrenador -> {
-            entrenador.setNombre(detalles.getNombre());
-            entrenador.setEspecialidad(detalles.getEspecialidad());
-            // agrega otros campos si tienes más
+            entrenador.setNombre(details.getNombre());
+            entrenador.setEspecialidad(details.getEspecialidad());
+            entrenador.setExperiencia(details.getExperiencia());
             return entrenadorrepository.save(entrenador);
         }).orElse(null);
     }
 
-    // Eliminar
-    public boolean eliminarEntrenador(Long id) {
+    public boolean deleteEntrenador(Long id) {
         if (entrenadorrepository.existsById(id)) {
             entrenadorrepository.deleteById(id);
             return true;
-        } else {
-            return false;
         }
+        return false;
     }
 }

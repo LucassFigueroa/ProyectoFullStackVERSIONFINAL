@@ -2,51 +2,66 @@ package com.fitlife.clase.controller;
 
 import com.fitlife.clase.model.clase;
 import com.fitlife.clase.service.claseservice;
-
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/clases")
 public class clasecontroller {
 
     @Autowired
-    private claseservice claseService;
+    private claseservice claseservice;
 
-    @PostMapping("/clases")
-    public clase createClase(@Valid @RequestBody clase clase) {
-        return claseService.guardarClase(clase);
+    // Crear clase
+    @PostMapping
+    public EntityModel<clase> guardarClase(@RequestBody clase clase) {
+        clase creada = claseservice.guardarClase(clase);
+        return EntityModel.of(creada,
+                linkTo(methodOn(clasecontroller.class).guardarClase(clase)).withSelfRel(),
+                linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withRel("todas-las-clases"));
     }
 
-    @GetMapping("/clases")
-    public List<clase> getAllClases() {
-        return claseService.obtenerTodasLasClases();
+    // Obtener todas
+    @GetMapping
+    public CollectionModel<EntityModel<clase>> obtenerTodasLasClases() {
+        List<EntityModel<clase>> clases = claseservice.obtenerTodasLasClases().stream()
+                .map(c -> EntityModel.of(c,
+                        linkTo(methodOn(clasecontroller.class).obtenerClasePorId(c.getId())).withSelfRel(),
+                        linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withRel("todas-las-clases")
+                ))
+                .collect(Collectors.toList());
+
+        return CollectionModel.of(clases, linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withSelfRel());
     }
 
-    @GetMapping("/clases/{id}")
-    public ResponseEntity<clase> getClaseById(@PathVariable Long id) {
-        Optional<clase> clase = claseService.obtenerClasePorId(id);
-        return clase.isPresent() ? ResponseEntity.ok(clase.get()) : ResponseEntity.notFound().build();
+    // Obtener una por ID
+    @GetMapping("/{id}")
+    public EntityModel<clase> obtenerClasePorId(@PathVariable Long id) {
+        clase encontrada = claseservice.obtenerClasePorId(id)
+                .orElseThrow(() -> new RuntimeException("Clase no encontrada"));
+        return EntityModel.of(encontrada,
+                linkTo(methodOn(clasecontroller.class).obtenerClasePorId(id)).withSelfRel(),
+                linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withRel("todas-las-clases"));
     }
 
-    @PutMapping("/clases/{id}")
-    public ResponseEntity<clase> updateClase(@PathVariable Long id, @Valid @RequestBody clase claseDetails) {
-        clase updated = claseService.actualizarClase(id, claseDetails);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+    // Actualizar
+    @PutMapping("/{id}")
+    public EntityModel<clase> actualizarClase(@PathVariable Long id, @RequestBody clase claseDetails) {
+        clase actualizada = claseservice.actualizarClase(id, claseDetails);
+        return EntityModel.of(actualizada,
+                linkTo(methodOn(clasecontroller.class).obtenerClasePorId(id)).withSelfRel());
     }
 
-    @DeleteMapping("/clases/{id}")
-    public ResponseEntity<Void> deleteClase(@PathVariable Long id) {
-        try {
-            claseService.eliminarClase(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+    // Eliminar
+    @DeleteMapping("/{id}")
+    public void eliminarClase(@PathVariable Long id) {
+        claseservice.eliminarClase(id);
     }
 }

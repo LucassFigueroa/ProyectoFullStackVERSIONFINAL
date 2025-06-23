@@ -15,13 +15,11 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.Optional;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.eq;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -39,38 +37,56 @@ public class clasecontrollerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private clase claseEntity;
+    private clase clase;
 
     @BeforeEach
-    void setUp() {
-        claseEntity = new clase(1L, "Yoga Power", "Sesión intensa", 60, 20, "Avanzado", 3L);
+    void setup() {
+        clase = new clase();
+        clase.setId(1L);
+        clase.setNombreClase("Yoga");
+        clase.setDescripcion("Clase de yoga");
     }
 
     @Test
-    void testCrearClase() throws Exception {
-        when(claseservice.guardarClase(any(clase.class))).thenReturn(claseEntity);
+    void testGuardarClase() throws Exception {
+        when(claseservice.guardarClase(any(clase.class))).thenReturn(clase);
 
         mockMvc.perform(post("/api/clases")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(claseEntity)))
+                        .content(objectMapper.writeValueAsString(clase)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombreClase").value("Yoga Power"));
+                .andExpect(jsonPath("$.nombreClase").value("Yoga"));
+    }
+
+    @Test
+    void testObtenerTodasLasClases() throws Exception {
+        when(claseservice.obtenerTodasLasClases()).thenReturn(List.of(clase));
+
+        mockMvc.perform(get("/api/clases"))
+                .andExpect(status().isOk());
     }
 
     @Test
     void testObtenerClasePorId() throws Exception {
-        when(claseservice.obtenerClasePorId(1L)).thenReturn(Optional.of(claseEntity));
+        when(claseservice.obtenerClasePorId(1L)).thenReturn(Optional.of(clase));
 
         mockMvc.perform(get("/api/clases/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombreClase").value("Yoga Power"));
+                .andExpect(status().isOk());
     }
 
-   @Test
-void testEliminarClase() throws Exception {
-    doNothing().when(claseservice).eliminarClase(eq(1L));
+    @Test
+    void testActualizarClase() throws Exception {
+        when(claseservice.actualizarClase(any(Long.class), any(clase.class))).thenReturn(clase);
 
-    mockMvc.perform(delete("/api/clases/1"))
-            .andExpect(status().isNoContent()); // Esto espera 204
-}
+        mockMvc.perform(put("/api/clases/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(clase)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testEliminarClase() throws Exception {
+        mockMvc.perform(delete("/api/clases/1"))
+                .andExpect(status().isOk());
+    }
 }

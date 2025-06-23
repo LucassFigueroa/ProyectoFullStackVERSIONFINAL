@@ -9,11 +9,11 @@ import org.springframework.context.annotation.Configuration;
 public class SwaggerConfig {
 
     @Bean
-    public OpenAPI claseOpenAPI() {
+    public OpenAPI apiInfo() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("API - Clase")
-                        .description("Documentación interactiva del microservicio de Clase para FitLife SPA.")
-                        .version("1.0.0"));
+                        .title("FitLife Clase API")
+                        .version("1.0")
+                        .description("Documentación para gestión de clases con roles y seguridad"));
     }
 }

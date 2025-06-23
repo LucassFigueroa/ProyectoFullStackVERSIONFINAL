@@ -10,7 +10,6 @@ import java.util.List;
 @Repository
 public interface evaluacionfisicarepository extends JpaRepository<evaluacionfisica, Long> {
 
-    List<evaluacionfisica> findByUsuarioid(Long usuarioid);
+    List<evaluacionfisica> findByFechaevaluacionBetween(LocalDate start, LocalDate end);
 
-    List<evaluacionfisica> findByFechaevaluacionBetween(LocalDate desde, LocalDate hasta);
 }
