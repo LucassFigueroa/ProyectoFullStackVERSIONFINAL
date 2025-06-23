@@ -11,26 +11,27 @@ import java.util.List;
 @Service
 public class usuarioservice {
 
+    private final usuariorepository usuariorepository;
+    private final BCryptPasswordEncoder passwordEncoder;
+
     @Autowired
-    private usuariorepository usuariorepository;
+    public usuarioservice(usuariorepository usuariorepository, BCryptPasswordEncoder passwordEncoder) {
+        this.usuariorepository = usuariorepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-    // Registro con encriptado y rol
     public usuariomodel register(usuariomodel usuario) {
         usuario.setContrasena(passwordEncoder.encode(usuario.getContrasena()));
         return usuariorepository.save(usuario);
     }
 
-    // Login: devuelve el usuario si OK, null si no OK
     public usuariomodel login(String email, String rawPassword) {
         usuariomodel user = usuariorepository.findByEmail(email);
-        if (user == null) {
-            return null;
-        }
-        boolean ok = passwordEncoder.matches(rawPassword, user.getContrasena());
-        return ok ? user : null;
+        if (user == null) return null;
+        return passwordEncoder.matches(rawPassword, user.getContrasena()) ? user : null;
     }
+
+
 
     public List<usuariomodel> getAll() {
         return usuariorepository.findAll();
@@ -57,4 +58,4 @@ public class usuarioservice {
         }
         return false;
     }
-}
+    }

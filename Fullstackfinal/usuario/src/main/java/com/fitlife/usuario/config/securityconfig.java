@@ -11,8 +11,11 @@ public class securityconfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Desactiva CSRF, no lo necesitas en REST puro
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll()); // 🔑 Permite todo acceso sin login
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/register", "/api/login", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .anyRequest().permitAll()
+            );
         return http.build();
     }
 }

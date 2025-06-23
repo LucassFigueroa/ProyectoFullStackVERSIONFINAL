@@ -4,12 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fitlife.usuario.controller.usuariocontroller;
 import com.fitlife.usuario.model.usuariomodel;
 import com.fitlife.usuario.service.usuarioservice;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc; // ✅ Importa esto
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,7 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(usuariocontroller.class)
-@AutoConfigureMockMvc(addFilters = false) // ✅ Desactiva filtros de seguridad para MockMvc
+@AutoConfigureMockMvc(addFilters = false)
 public class usuariocontrollerTest {
 
     @Autowired
@@ -34,20 +33,29 @@ public class usuariocontrollerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private usuariomodel user;
-
-    @BeforeEach
-    void setup() {
-        user = new usuariomodel(1L, "AdminMaster", "admin@fitlife.com", "admin123", "ADMIN");
-    }
-
     @Test
     void testRegister() throws Exception {
-        when(usuarioservice.register(any(usuariomodel.class))).thenReturn(user);
+        // ✅ Usar modelo correcto para mock
+        usuariomodel returnedUser = new usuariomodel();
+        returnedUser.setId(1L);
+        returnedUser.setNombre("AdminMaster");
+        returnedUser.setEmail("admin@fitlife.com");
+        returnedUser.setContrasena("admin123");
+        returnedUser.setRol("ADMIN");
+
+        when(usuarioservice.register(any(usuariomodel.class))).thenReturn(returnedUser);
+
+        String body = """
+            {
+              "nombre": "AdminMaster",
+              "email": "admin@fitlife.com",
+              "contrasena": "admin123"
+            }
+            """;
 
         mockMvc.perform(post("/api/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(user)))
+                        .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nombre").value("AdminMaster"))
                 .andExpect(jsonPath("$.email").value("admin@fitlife.com"))
@@ -56,14 +64,21 @@ public class usuariocontrollerTest {
 
     @Test
     void testLogin_OK() throws Exception {
-        when(usuarioservice.login(eq("admin@fitlife.com"), eq("admin123"))).thenReturn(user);
+        usuariomodel loginUser = new usuariomodel();
+        loginUser.setId(1L);
+        loginUser.setNombre("AdminMaster");
+        loginUser.setEmail("admin@fitlife.com");
+        loginUser.setContrasena("admin123");
+        loginUser.setRol("ADMIN");
+
+        when(usuarioservice.login(eq("admin@fitlife.com"), eq("admin123"))).thenReturn(loginUser);
 
         String body = """
-                {
-                  "email": "admin@fitlife.com",
-                  "contrasena": "admin123"
-                }
-                """;
+            {
+              "email": "admin@fitlife.com",
+              "contrasena": "admin123"
+            }
+            """;
 
         mockMvc.perform(post("/api/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -78,11 +93,11 @@ public class usuariocontrollerTest {
         when(usuarioservice.login(eq("admin@fitlife.com"), eq("wrongpass"))).thenReturn(null);
 
         String body = """
-                {
-                  "email": "admin@fitlife.com",
-                  "contrasena": "wrongpass"
-                }
-                """;
+            {
+              "email": "admin@fitlife.com",
+              "contrasena": "wrongpass"
+            }
+            """;
 
         mockMvc.perform(post("/api/login")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -25,8 +25,20 @@ public class usuariocontroller {
     private usuarioservice usuarioservice;
 
     @PostMapping("/register")
-    public usuariomodel register(@Valid @RequestBody usuariomodel usuario) {
-        return usuarioservice.register(usuario);
+public usuariomodel register(@Valid @RequestBody usuariomodel usuario) {
+    return usuarioservice.register(usuario);
+}
+
+    @PostMapping("/register/admin")
+    public ResponseEntity<?> registerAdmin(@RequestBody usuariomodel usuario, @RequestParam String adminKey) {
+        // Solo permitir crear admin con clave maestra
+        if (!"ADMIN_SECRET".equals(adminKey)) {
+            Map<String, Object> res = new HashMap<>();
+            res.put("message", "Falta de permisos, usted será CLIENTE. Contacte soporte.");
+            usuario.setRol("CLIENTE");
+            return ResponseEntity.ok(usuarioservice.register(usuario));
+        }
+        return ResponseEntity.ok(usuarioservice.register(usuario));
     }
 
     @PostMapping("/login")

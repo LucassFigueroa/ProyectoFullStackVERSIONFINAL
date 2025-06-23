@@ -14,9 +14,13 @@
 | **usuario**          | `8091` | [http://localhost:8091/swagger-ui/index.html](http://localhost:8091/swagger-ui/index.html) | `http://localhost:8091/api/usuarios`       |
 
 
-----------Comandos Docker--------------
-ESTO REINICIA TODO:docker compose down -v
-ESTO LO PRENDE DESDE CERO:docker compose up --build
-VER CONTENEDORES ACTIVOS: docker ps, docker ps -a para ver todos los activos + detenidos)
+Rol	Permisos clave
+ADMIN	🔑 Todo: usuarios, roles, inventario, clases, pagos, reportes.
+ENTRENADOR	👟 Gestiona clases y horarios, ve evaluaciones físicas.
+STAFF	🗂️ Gestiona inventario y reservas, no toca usuarios/roles.
+SOPORTE	🎧 Modifica reportes, ve pagos (solo ver, NO modificar).
+CLIENTE	🙋‍♂️ Solo usa servicios: reserva clases, ve su cuenta.
+
+
 RECOMENDACION LUCAS:
 "NO USAR XAMPP, ES PREFERIBLE MYSQLWORKBENCH Y LARAGON YA QUE EL CAMBIO DE PUERTO ES MAS FACIL DE HACER :3
