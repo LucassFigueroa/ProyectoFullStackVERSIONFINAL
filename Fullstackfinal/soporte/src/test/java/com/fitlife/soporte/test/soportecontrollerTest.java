@@ -6,79 +6,75 @@ import com.fitlife.soporte.model.soportemodel;
 import com.fitlife.soporte.service.soporteservice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Arrays;
+import java.util.List;
+
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import static org.hamcrest.Matchers.*;
+
+@WebMvcTest(soportecontroller.class)
 public class soportecontrollerTest {
 
+    @Autowired
     private MockMvc mockMvc;
 
-    @Mock
+    @MockBean
     private soporteservice soporteservice;
 
-    @InjectMocks
-    private soportecontroller soportecontroller;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private soportemodel soporte;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(soportecontroller).build();
+        soporte = new soportemodel(1L, "Asunto de prueba", "Mensaje de prueba");
     }
 
     @Test
     void testCreate() throws Exception {
-        soportemodel input = new soportemodel(null, "Asunto", "Mensaje");
-        soportemodel saved = new soportemodel(1L, "Asunto", "Mensaje");
-
-        when(soporteservice.save(any(soportemodel.class))).thenReturn(saved);
+        when(soporteservice.save(any())).thenReturn(soporte);
 
         mockMvc.perform(post("/api/soportes")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(input)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(soporte)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.asunto").value("Asunto"));
-
-        verify(soporteservice, times(1)).save(any(soportemodel.class));
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.asunto").value("Asunto de prueba"))
+                .andExpect(jsonPath("$._links.self.href").exists())
+                .andExpect(jsonPath("$._links.todos.href").exists())
+                .andExpect(jsonPath("$._links.buscar-por-asunto.href").exists());
     }
 
     @Test
     void testGetAll() throws Exception {
-        soportemodel s1 = new soportemodel(1L, "A1", "M1");
-        soportemodel s2 = new soportemodel(2L, "A2", "M2");
-
-        when(soporteservice.getAll()).thenReturn(Arrays.asList(s1, s2));
+        when(soporteservice.getAll()).thenReturn(List.of(soporte));
 
         mockMvc.perform(get("/api/soportes"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].id").value(1L));
-
-        verify(soporteservice, times(1)).getAll();
+                .andExpect(jsonPath("$._embedded.soportemodelList").isArray())
+                .andExpect(jsonPath("$._embedded.soportemodelList[0].id").value(1))
+                .andExpect(jsonPath("$._embedded.soportemodelList[0].asunto").value("Asunto de prueba"))
+                .andExpect(jsonPath("$._embedded.soportemodelList[0]._links.self.href").exists());
     }
 
     @Test
     void testGetById_Found() throws Exception {
-        soportemodel s = new soportemodel(1L, "Asunto", "Mensaje");
-
-        when(soporteservice.getById(1L)).thenReturn(s);
+        when(soporteservice.getById(1L)).thenReturn(soporte);
 
         mockMvc.perform(get("/api/soportes/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.asunto").value("Asunto"));
-
-        verify(soporteservice, times(1)).getById(1L);
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.asunto").value("Asunto de prueba"))
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
@@ -87,38 +83,29 @@ public class soportecontrollerTest {
 
         mockMvc.perform(get("/api/soportes/1"))
                 .andExpect(status().isNotFound());
-
-        verify(soporteservice, times(1)).getById(1L);
     }
 
     @Test
     void testUpdate_Found() throws Exception {
-        soportemodel input = new soportemodel(null, "Nuevo", "Mensaje nuevo");
-        soportemodel updated = new soportemodel(1L, "Nuevo", "Mensaje nuevo");
-
-        when(soporteservice.update(eq(1L), any(soportemodel.class))).thenReturn(updated);
+        when(soporteservice.update(eq(1L), any())).thenReturn(soporte);
 
         mockMvc.perform(put("/api/soportes/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(input)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(soporte)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.asunto").value("Nuevo"));
-
-        verify(soporteservice, times(1)).update(eq(1L), any(soportemodel.class));
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.asunto").value("Asunto de prueba"))
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
     void testUpdate_NotFound() throws Exception {
-        soportemodel input = new soportemodel(null, "Nuevo", "Mensaje nuevo");
-
-        when(soporteservice.update(eq(1L), any(soportemodel.class))).thenReturn(null);
+        when(soporteservice.update(eq(1L), any())).thenReturn(null);
 
         mockMvc.perform(put("/api/soportes/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(input)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(soporte)))
                 .andExpect(status().isNotFound());
-
-        verify(soporteservice, times(1)).update(eq(1L), any(soportemodel.class));
     }
 
     @Test
@@ -127,8 +114,6 @@ public class soportecontrollerTest {
 
         mockMvc.perform(delete("/api/soportes/1"))
                 .andExpect(status().isNoContent());
-
-        verify(soporteservice, times(1)).delete(1L);
     }
 
     @Test
@@ -137,7 +122,17 @@ public class soportecontrollerTest {
 
         mockMvc.perform(delete("/api/soportes/1"))
                 .andExpect(status().isNotFound());
+    }
 
-        verify(soporteservice, times(1)).delete(1L);
+    @Test
+    void testSearchByAsunto() throws Exception {
+        when(soporteservice.findByAsunto("Asunto")).thenReturn(List.of(soporte));
+
+        mockMvc.perform(get("/api/soportes/search")
+                        .param("keyword", "Asunto"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.soportemodelList").isArray())
+                .andExpect(jsonPath("$._embedded.soportemodelList[0].id").value(1))
+                .andExpect(jsonPath("$._embedded.soportemodelList[0]._links.self.href").exists());
     }
 }

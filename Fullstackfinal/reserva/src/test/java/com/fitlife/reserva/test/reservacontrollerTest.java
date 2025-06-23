@@ -53,7 +53,8 @@ public class reservacontrollerTest {
                         .content(objectMapper.writeValueAsString(reserva)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.usuarioId").value(1))
-                .andExpect(jsonPath("$.claseId").value(2));
+                .andExpect(jsonPath("$.claseId").value(2))
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
@@ -74,7 +75,8 @@ public class reservacontrollerTest {
 
         mockMvc.perform(get("/api/reservas/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1));
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
@@ -93,7 +95,8 @@ public class reservacontrollerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reserva)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.usuarioId").value(1));
+                .andExpect(jsonPath("$.usuarioId").value(1))
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
@@ -118,7 +121,8 @@ public class reservacontrollerTest {
 
         mockMvc.perform(get("/api/reservas/usuario/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].usuarioId").value(1));
+                .andExpect(jsonPath("$._embedded.reservamodelList[0].usuarioId").value(1))
+                .andExpect(jsonPath("$._embedded.reservamodelList[0]._links.self.href").exists());
     }
 
     @Test
@@ -129,7 +133,7 @@ public class reservacontrollerTest {
         mockMvc.perform(get("/api/reservas/fecha")
                         .param("fecha", fecha))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].fecha").value(fecha));
+                .andExpect(jsonPath("$._embedded.reservamodelList[0].fecha").value(fecha));
     }
 
     @Test
@@ -142,6 +146,6 @@ public class reservacontrollerTest {
                         .param("desde", desde)
                         .param("hasta", hasta))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].usuarioId").value(1));
+                .andExpect(jsonPath("$._embedded.reservamodelList[0].usuarioId").value(1));
     }
 }
