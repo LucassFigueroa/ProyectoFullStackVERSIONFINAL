@@ -7,16 +7,16 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
-
 @Repository
 public interface horariorepository extends JpaRepository<horariomodel, Long> {
 
-    // Filtrar todos los horarios de un entrenador específico
-    List<horariomodel> findByEntrenadorId(Long entrenadorId);
+    List<horariomodel> findByFechaHoraInicio(LocalDateTime fechaHoraInicio);
 
-    // Filtrar horarios entre un rango de fecha/hora de inicio
+    List<horariomodel> findByFechaHoraFin(LocalDateTime fechaHoraFin);
+
     List<horariomodel> findByFechaHoraInicioBetween(LocalDateTime desde, LocalDateTime hasta);
 
-    // Filtrar horarios por entrenador y rango de fecha/hora
+    List<horariomodel> findByEntrenadorId(Long entrenadorId);
+
     List<horariomodel> findByEntrenadorIdAndFechaHoraInicioBetween(Long entrenadorId, LocalDateTime desde, LocalDateTime hasta);
 }

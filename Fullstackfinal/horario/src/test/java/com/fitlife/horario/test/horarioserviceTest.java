@@ -15,16 +15,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class horarioserviceTest {
 
@@ -48,10 +40,10 @@ public class horarioserviceTest {
     }
 
     @Test
-    void guardarHorario_deberiaGuardar() {
+    void crearHorario_deberiaGuardar() {
         when(horarioRepository.save(any(horariomodel.class))).thenReturn(horario);
 
-        horariomodel guardado = horarioService.guardarHorario(horario);
+        horariomodel guardado = horarioService.crearHorario(horario);
 
         assertNotNull(guardado);
         assertEquals(10L, guardado.getEntrenadorId());
@@ -59,27 +51,27 @@ public class horarioserviceTest {
     }
 
     @Test
-    void listarHorarios_deberiaRetornarLista() {
+    void getAllHorarios_deberiaRetornarLista() {
         when(horarioRepository.findAll()).thenReturn(List.of(horario));
 
-        List<horariomodel> lista = horarioService.listarHorarios();
+        List<horariomodel> lista = horarioService.getAllHorarios();
 
         assertEquals(1, lista.size());
         verify(horarioRepository).findAll();
     }
 
     @Test
-    void obtenerPorId_deberiaRetornarObjetoSiExiste() {
+    void getHorarioById_deberiaRetornarObjetoSiExiste() {
         when(horarioRepository.findById(1L)).thenReturn(Optional.of(horario));
 
-        Optional<horariomodel> encontrado = horarioService.obtenerPorId(1L);
+        Optional<horariomodel> encontrado = horarioService.getHorarioById(1L);
 
         assertTrue(encontrado.isPresent());
         assertEquals(1L, encontrado.get().getId());
     }
 
     @Test
-    void actualizarHorario_deberiaActualizarSiExiste() {
+    void actualizarHorario_deberiaActualizar() {
         when(horarioRepository.existsById(1L)).thenReturn(true);
         when(horarioRepository.save(any(horariomodel.class))).thenReturn(horario);
 
@@ -122,22 +114,22 @@ public class horarioserviceTest {
     }
 
     @Test
-    void buscarPorEntrenador_deberiaRetornarLista() {
+    void buscarPorEntrenadorId_deberiaRetornarLista() {
         when(horarioRepository.findByEntrenadorId(10L)).thenReturn(List.of(horario));
 
-        List<horariomodel> resultado = horarioService.buscarPorEntrenador(10L);
+        List<horariomodel> resultado = horarioService.buscarPorEntrenadorId(10L);
 
         assertEquals(1, resultado.size());
     }
 
     @Test
-    void buscarPorRangoFechaHora_deberiaRetornarLista() {
+    void buscarPorRango_deberiaRetornarLista() {
         LocalDateTime desde = LocalDateTime.now().plusDays(1);
         LocalDateTime hasta = LocalDateTime.now().plusDays(2);
 
         when(horarioRepository.findByFechaHoraInicioBetween(desde, hasta)).thenReturn(List.of(horario));
 
-        List<horariomodel> resultado = horarioService.buscarPorRangoFechaHora(desde, hasta);
+        List<horariomodel> resultado = horarioService.buscarPorRango(desde, hasta);
 
         assertEquals(1, resultado.size());
     }
@@ -147,7 +139,8 @@ public class horarioserviceTest {
         LocalDateTime desde = LocalDateTime.now().plusDays(1);
         LocalDateTime hasta = LocalDateTime.now().plusDays(2);
 
-        when(horarioRepository.findByEntrenadorIdAndFechaHoraInicioBetween(10L, desde, hasta)).thenReturn(List.of(horario));
+        when(horarioRepository.findByEntrenadorIdAndFechaHoraInicioBetween(10L, desde, hasta))
+                .thenReturn(List.of(horario));
 
         List<horariomodel> resultado = horarioService.buscarPorEntrenadorYRango(10L, desde, hasta);
 
