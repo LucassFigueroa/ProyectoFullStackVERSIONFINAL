@@ -2,7 +2,6 @@ package com.fitlife.soporte.controller;
 
 import com.fitlife.soporte.model.soportemodel;
 import com.fitlife.soporte.service.soporteservice;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -15,67 +14,53 @@ import java.util.stream.Collectors;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/soporte")
 public class soportecontroller {
 
     @Autowired
     private soporteservice soporteservice;
 
-    @PostMapping("/soportes")
-    public ResponseEntity<EntityModel<soportemodel>> create(@Valid @RequestBody soportemodel soporte) {
-        soportemodel saved = soporteservice.save(soporte);
-        return ResponseEntity.ok(toModel(saved));
+    @PostMapping
+    public ResponseEntity<EntityModel<soportemodel>> createSoporte(@RequestBody soportemodel soporte) {
+        soportemodel saved = soporteservice.saveSoporte(soporte);
+        EntityModel<soportemodel> resource = EntityModel.of(saved,
+                linkTo(methodOn(soportecontroller.class).getSoporteById(saved.getId())).withSelfRel(),
+                linkTo(methodOn(soportecontroller.class).getAllSoporte()).withRel("all-soporte"));
+        return ResponseEntity.ok(resource);
     }
 
-    @GetMapping("/soportes")
-    public CollectionModel<EntityModel<soportemodel>> getAll() {
-        List<soportemodel> soportes = soporteservice.getAll();
-        List<EntityModel<soportemodel>> modelos = soportes.stream()
-                .map(this::toModel)
+    @GetMapping
+    public CollectionModel<EntityModel<soportemodel>> getAllSoporte() {
+        List<EntityModel<soportemodel>> soporteList = soporteservice.getAllSoporte().stream()
+                .map(s -> EntityModel.of(s,
+                        linkTo(methodOn(soportecontroller.class).getSoporteById(s.getId())).withSelfRel()))
                 .collect(Collectors.toList());
-
-        return CollectionModel.of(modelos,
-                linkTo(methodOn(soportecontroller.class).getAll()).withSelfRel());
+        return CollectionModel.of(soporteList,
+                linkTo(methodOn(soportecontroller.class).getAllSoporte()).withSelfRel());
     }
 
-    @GetMapping("/soportes/{id}")
-    public ResponseEntity<EntityModel<soportemodel>> getById(@PathVariable Long id) {
-        soportemodel soporte = soporteservice.getById(id);
-        return soporte != null
-                ? ResponseEntity.ok(toModel(soporte))
-                : ResponseEntity.notFound().build();
+    @GetMapping("/{id}")
+    public ResponseEntity<EntityModel<soportemodel>> getSoporteById(@PathVariable Long id) {
+        soportemodel soporte = soporteservice.getSoporteById(id);
+        if (soporte != null) {
+            EntityModel<soportemodel> resource = EntityModel.of(soporte,
+                    linkTo(methodOn(soportecontroller.class).getSoporteById(id)).withSelfRel(),
+                    linkTo(methodOn(soportecontroller.class).getAllSoporte()).withRel("all-soporte"));
+            return ResponseEntity.ok(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    @PutMapping("/soportes/{id}")
-    public ResponseEntity<EntityModel<soportemodel>> update(@PathVariable Long id, @Valid @RequestBody soportemodel details) {
-        soportemodel updated = soporteservice.update(id, details);
-        return updated != null
-                ? ResponseEntity.ok(toModel(updated))
-                : ResponseEntity.notFound().build();
+    @PutMapping("/{id}")
+    public ResponseEntity<soportemodel> updateSoporte(@PathVariable Long id, @RequestBody soportemodel soporte) {
+        soportemodel updated = soporteservice.updateSoporte(id, soporte);
+        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
     }
 
-    @DeleteMapping("/soportes/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        boolean deleted = soporteservice.delete(id);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSoporte(@PathVariable Long id) {
+        boolean deleted = soporteservice.deleteSoporte(id);
         return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
-    }
-
-    @GetMapping("/soportes/search")
-    public CollectionModel<EntityModel<soportemodel>> searchByAsunto(@RequestParam String keyword) {
-        List<soportemodel> resultados = soporteservice.findByAsunto(keyword);
-        List<EntityModel<soportemodel>> modelos = resultados.stream()
-                .map(this::toModel)
-                .collect(Collectors.toList());
-
-        return CollectionModel.of(modelos,
-                linkTo(methodOn(soportecontroller.class).searchByAsunto(keyword)).withSelfRel());
-    }
-
-    // Método que agrega los enlaces HATEOAS directamente
-    private EntityModel<soportemodel> toModel(soportemodel soporte) {
-        return EntityModel.of(soporte,
-                linkTo(methodOn(soportecontroller.class).getById(soporte.getId())).withSelfRel(),
-                linkTo(methodOn(soportecontroller.class).getAll()).withRel("todos"),
-                linkTo(methodOn(soportecontroller.class).searchByAsunto(soporte.getAsunto())).withRel("buscar-por-asunto"));
     }
 }
