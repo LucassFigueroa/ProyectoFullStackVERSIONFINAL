@@ -1,13 +1,11 @@
 package com.fitlife.usuario.config;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@EnableMethodSecurity(prePostEnabled = true)
 public class securityconfig {
 
     @Bean
@@ -15,16 +13,14 @@ public class securityconfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/api/register",
-                    "/api/register/admin",
-                    "/api/login",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**"
-                ).permitAll()
-                .anyRequest().authenticated()
-            )
-            .httpBasic(); // para usar con Postman o Swagger
+                .requestMatchers("/api/register", "/api/login", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .anyRequest().permitAll()
+            );
         return http.build();
+    }
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
