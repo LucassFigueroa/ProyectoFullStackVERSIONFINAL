@@ -2,14 +2,20 @@ package com.fitlife.usuario.controller;
 
 import com.fitlife.usuario.model.usuariomodel;
 import com.fitlife.usuario.service.usuarioservice;
+
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
 @RequestMapping("/api")
@@ -45,14 +51,32 @@ public class usuariocontroller {
     }
 
     @GetMapping("/usuarios")
-    public List<usuariomodel> getAll() {
-        return usuarioservice.getAll();
+    public CollectionModel<EntityModel<usuariomodel>> getAll() {
+        List<EntityModel<usuariomodel>> usuarios = usuarioservice.getAll().stream()
+                .map(usuario -> EntityModel.of(usuario,
+                        linkTo(methodOn(usuariocontroller.class).getById(usuario.getId())).withSelfRel(),
+                        linkTo(methodOn(usuariocontroller.class).getAll()).withRel("all-usuarios")
+                ))
+                .collect(Collectors.toList());
+
+        return CollectionModel.of(usuarios,
+                linkTo(methodOn(usuariocontroller.class).getAll()).withSelfRel());
     }
 
     @GetMapping("/usuarios/{id}")
-    public ResponseEntity<usuariomodel> getById(@PathVariable Long id) {
+    public ResponseEntity<EntityModel<usuariomodel>> getById(@PathVariable Long id) {
         usuariomodel usuario = usuarioservice.getById(id);
-        return usuario != null ? ResponseEntity.ok(usuario) : ResponseEntity.notFound().build();
+        if (usuario != null) {
+            EntityModel<usuariomodel> resource = EntityModel.of(usuario,
+                    linkTo(methodOn(usuariocontroller.class).getById(id)).withSelfRel(),
+                    linkTo(methodOn(usuariocontroller.class).getAll()).withRel("all-usuarios"),
+                    linkTo(methodOn(usuariocontroller.class).delete(id)).withRel("delete"),
+                    linkTo(methodOn(usuariocontroller.class).update(id, usuario)).withRel("update")
+            );
+            return ResponseEntity.ok(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PutMapping("/usuarios/{id}")
