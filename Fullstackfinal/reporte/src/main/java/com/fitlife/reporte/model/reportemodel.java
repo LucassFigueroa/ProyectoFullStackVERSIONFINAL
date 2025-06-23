@@ -21,13 +21,13 @@ public class reportemodel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    @Size(max = 50)
+    @NotBlank(message = "El título no puede estar vacío")
+    @Size(max = 50, message = "El título no puede exceder los 50 caracteres")
     @Column(length = 50, nullable = false)
     private String titulo;
 
-    @NotBlank
-    @Size(max = 255)
+    @NotBlank(message = "La descripción no puede estar vacía")
+    @Size(max = 255, message = "La descripción no puede exceder los 255 caracteres")
     @Column(length = 255, nullable = false)
     private String descripcion;
 
@@ -38,6 +38,7 @@ public class reportemodel {
     @UpdateTimestamp
     private LocalDateTime fechaActualizacion;
 
+    @Size(max = 30, message = "El tipo no puede exceder los 30 caracteres")
     @Column(length = 30)
     private String tipo;
 }

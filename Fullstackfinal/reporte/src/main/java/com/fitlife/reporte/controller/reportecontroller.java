@@ -12,6 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -22,20 +23,22 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @Tag(name = "Reportes", description = "Operaciones relacionadas con reportes")
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/reportes")
 public class reportecontroller {
 
     @Autowired
     private reporteservice reporteservice;
 
-    @PostMapping("/reportes")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping
     @Operation(summary = "Crear un nuevo reporte")
     public ResponseEntity<EntityModel<reportemodel>> create(@Valid @RequestBody reportemodel reporte) {
         reportemodel saved = reporteservice.save(reporte);
         return ResponseEntity.ok(toModel(saved));
     }
 
-    @GetMapping("/reportes")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SOPORTE')")
+    @GetMapping
     @Operation(summary = "Obtener todos los reportes")
     public CollectionModel<EntityModel<reportemodel>> getAll(
             @RequestParam(required = false) Integer page,
@@ -51,14 +54,15 @@ public class reportecontroller {
         }
 
         List<EntityModel<reportemodel>> modelos = reportes.stream()
-            .map(this::toModel)
-            .collect(Collectors.toList());
+                .map(this::toModel)
+                .collect(Collectors.toList());
 
         return CollectionModel.of(modelos,
-            linkTo(methodOn(reportecontroller.class).getAll(page, size)).withSelfRel());
+                linkTo(methodOn(reportecontroller.class).getAll(page, size)).withSelfRel());
     }
 
-    @GetMapping("/reportes/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SOPORTE')")
+    @GetMapping("/{id}")
     @Operation(summary = "Obtener reporte por ID")
     public ResponseEntity<EntityModel<reportemodel>> getById(@PathVariable Long id) {
         reportemodel reporte = reporteservice.getById(id);
@@ -67,7 +71,8 @@ public class reportecontroller {
                 : ResponseEntity.notFound().build();
     }
 
-    @PutMapping("/reportes/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SOPORTE')")
+    @PutMapping("/{id}")
     @Operation(summary = "Actualizar reporte por ID")
     public ResponseEntity<EntityModel<reportemodel>> update(
             @PathVariable Long id,
@@ -79,7 +84,8 @@ public class reportecontroller {
                 : ResponseEntity.notFound().build();
     }
 
-    @DeleteMapping("/reportes/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar reporte por ID")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         boolean deleted = reporteservice.delete(id);
@@ -88,20 +94,22 @@ public class reportecontroller {
                 : ResponseEntity.notFound().build();
     }
 
-    @GetMapping("/reportes/filtro/tipo")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SOPORTE')")
+    @GetMapping("/filtro/tipo")
     @Operation(summary = "Filtrar reportes por tipo")
     public CollectionModel<EntityModel<reportemodel>> getByTipo(@RequestParam String tipo) {
         List<reportemodel> reportes = reporteservice.getByTipo(tipo);
 
         List<EntityModel<reportemodel>> modelos = reportes.stream()
-            .map(this::toModel)
-            .collect(Collectors.toList());
+                .map(this::toModel)
+                .collect(Collectors.toList());
 
         return CollectionModel.of(modelos,
-            linkTo(methodOn(reportecontroller.class).getByTipo(tipo)).withSelfRel());
+                linkTo(methodOn(reportecontroller.class).getByTipo(tipo)).withSelfRel());
     }
 
-    @GetMapping("/reportes/filtro/fecha")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SOPORTE')")
+    @GetMapping("/filtro/fecha")
     @Operation(summary = "Filtrar reportes por rango de fechas")
     public CollectionModel<EntityModel<reportemodel>> getByFecha(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) String desde,
@@ -113,18 +121,17 @@ public class reportecontroller {
         List<reportemodel> reportes = reporteservice.getByFechaCreacionBetween(fechaDesde, fechaHasta);
 
         List<EntityModel<reportemodel>> modelos = reportes.stream()
-            .map(this::toModel)
-            .collect(Collectors.toList());
+                .map(this::toModel)
+                .collect(Collectors.toList());
 
         return CollectionModel.of(modelos,
-            linkTo(methodOn(reportecontroller.class).getByFecha(desde, hasta)).withSelfRel());
+                linkTo(methodOn(reportecontroller.class).getByFecha(desde, hasta)).withSelfRel());
     }
 
-    
     private EntityModel<reportemodel> toModel(reportemodel reporte) {
         return EntityModel.of(reporte,
-            linkTo(methodOn(reportecontroller.class).getById(reporte.getId())).withSelfRel(),
-            linkTo(methodOn(reportecontroller.class).getAll(null, null)).withRel("todos"),
-            linkTo(methodOn(reportecontroller.class).getByTipo(reporte.getTipo())).withRel("tipo"));
+                linkTo(methodOn(reportecontroller.class).getById(reporte.getId())).withSelfRel(),
+                linkTo(methodOn(reportecontroller.class).getAll(null, null)).withRel("todos"),
+                linkTo(methodOn(reportecontroller.class).getByTipo(reporte.getTipo())).withRel("tipo"));
     }
 }

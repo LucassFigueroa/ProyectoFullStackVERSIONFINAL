@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class reporteservice {
@@ -43,12 +44,15 @@ public class reporteservice {
 
     @Transactional
     public reportemodel update(Long id, reportemodel details) {
-        return reporterepository.findById(id).map(reporte -> {
+        Optional<reportemodel> optional = reporterepository.findById(id);
+        if (optional.isPresent()) {
+            reportemodel reporte = optional.get();
             reporte.setTitulo(details.getTitulo());
             reporte.setDescripcion(details.getDescripcion());
             reporte.setTipo(details.getTipo());
             return reporterepository.save(reporte);
-        }).orElse(null);
+        }
+        return null;
     }
 
     public boolean delete(Long id) {
