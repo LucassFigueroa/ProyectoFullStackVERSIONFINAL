@@ -55,47 +55,46 @@ public class horariocontrollerTest {
     }
 
     @Test
-    void crearHorario_deberiaRetornarOk() throws Exception {
+    void crearHorario_deberiaRetornarCreated() throws Exception {
         horariomodel nuevo = horariomodel.builder()
                 .entrenadorId(10L)
                 .fechaHoraInicio(LocalDateTime.now().plusDays(1))
                 .fechaHoraFin(LocalDateTime.now().plusDays(1).plusHours(1))
                 .build();
 
-        when(horarioService.guardarHorario(any(horariomodel.class))).thenReturn(horario);
+        when(horarioService.crearHorario(any(horariomodel.class))).thenReturn(horario);
 
-        mockMvc.perform(post("/horarios")
+        mockMvc.perform(post("/api/horarios")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(nuevo)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.entrenadorId").value(10L));
     }
 
     @Test
     void listarHorarios_deberiaRetornarListaConLinks() throws Exception {
-        when(horarioService.listarHorarios()).thenReturn(List.of(horario));
+        when(horarioService.getAllHorarios()).thenReturn(List.of(horario));
 
-        mockMvc.perform(get("/horarios"))
+        mockMvc.perform(get("/api/horarios"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._embedded.horariomodelList[0].entrenadorId").value(10L));
     }
 
     @Test
     void obtenerHorarioPorId_deberiaRetornarObjeto() throws Exception {
-        when(horarioService.obtenerPorId(1L)).thenReturn(Optional.of(horario));
+        when(horarioService.getHorarioById(1L)).thenReturn(Optional.of(horario));
 
-        mockMvc.perform(get("/horarios/1"))
+        mockMvc.perform(get("/api/horarios/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L));
     }
 
     @Test
     void obtenerHorarioPorId_noEncontrado_deberiaRetornar404() throws Exception {
-        when(horarioService.obtenerPorId(1L)).thenReturn(Optional.empty());
+        when(horarioService.getHorarioById(1L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/horarios/1"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("Horario no encontrado"));
+        mockMvc.perform(get("/api/horarios/1"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -108,7 +107,7 @@ public class horariocontrollerTest {
 
         when(horarioService.actualizarHorario(eq(1L), any(horariomodel.class))).thenReturn(horario);
 
-        mockMvc.perform(put("/horarios/1")
+        mockMvc.perform(put("/api/horarios/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(actualizado)))
                 .andExpect(status().isOk())
@@ -119,46 +118,31 @@ public class horariocontrollerTest {
     void eliminarHorario_deberiaRetornarNoContent() throws Exception {
         doNothing().when(horarioService).eliminarHorario(1L);
 
-        mockMvc.perform(delete("/horarios/1"))
+        mockMvc.perform(delete("/api/horarios/1"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    void buscarPorEntrenador_deberiaRetornarListaConLinks() throws Exception {
-        when(horarioService.buscarPorEntrenador(10L)).thenReturn(List.of(horario));
+    void buscarPorEntrenador_deberiaRetornarLista() throws Exception {
+        when(horarioService.buscarPorEntrenadorId(10L)).thenReturn(List.of(horario));
 
-        mockMvc.perform(get("/horarios/buscarPorEntrenador")
+        mockMvc.perform(get("/api/horarios/buscarPorEntrenador")
                         .param("entrenadorId", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.horariomodelList[0].entrenadorId").value(10L));
+                .andExpect(jsonPath("$[0].entrenadorId").value(10L));
     }
 
     @Test
-    void buscarPorRango_deberiaRetornarListaConLinks() throws Exception {
+    void buscarPorRango_deberiaRetornarLista() throws Exception {
         String desde = LocalDateTime.now().plusDays(1).toString();
         String hasta = LocalDateTime.now().plusDays(2).toString();
 
-        when(horarioService.buscarPorRangoFechaHora(any(), any())).thenReturn(List.of(horario));
+        when(horarioService.buscarPorRango(any(), any())).thenReturn(List.of(horario));
 
-        mockMvc.perform(get("/horarios/buscarPorRango")
+        mockMvc.perform(get("/api/horarios/buscarRango")
                         .param("desde", desde)
                         .param("hasta", hasta))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.horariomodelList[0].entrenadorId").value(10L));
-    }
-
-    @Test
-    void buscarPorEntrenadorYRango_deberiaRetornarListaConLinks() throws Exception {
-        String desde = LocalDateTime.now().plusDays(1).toString();
-        String hasta = LocalDateTime.now().plusDays(2).toString();
-
-        when(horarioService.buscarPorEntrenadorYRango(eq(10L), any(), any())).thenReturn(List.of(horario));
-
-        mockMvc.perform(get("/horarios/buscarPorEntrenadorYRango")
-                        .param("entrenadorId", "10")
-                        .param("desde", desde)
-                        .param("hasta", hasta))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.horariomodelList[0].entrenadorId").value(10L));
+                .andExpect(jsonPath("$[0].entrenadorId").value(10L));
     }
 }

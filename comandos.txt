@@ -44,9 +44,9 @@ LOS DEL LUCARDO
 // (Recuerda poner ?adminKey=ADMIN_SECRET en Swagger)
 //-------------------------------------
 {
-  "nombre": "AdminMaster2",
-  "email": "admin2@correo.com",
-  "contrasena": "admin123"
+  "nombre": "adminsupremo",
+  "email": "adminsupremo",
+  "contrasena": "2005"
 }
 
 //-------------------------------------
