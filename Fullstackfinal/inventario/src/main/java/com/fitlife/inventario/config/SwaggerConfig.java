@@ -16,8 +16,8 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("API - Inventario")
-                        .version("1.0")
-                        .description("Documentación interactiva del microservicio Inventario para FitLife SPA"))
+                        .version("1.0.0")
+                        .description("Documentación interactiva para el microservicio Inventario - FitLife SPA"))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new io.swagger.v3.oas.models.Components()
                         .addSecuritySchemes(securitySchemeName,
