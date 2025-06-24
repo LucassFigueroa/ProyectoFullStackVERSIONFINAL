@@ -20,8 +20,8 @@ public class SecurityConfig {
         InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
 
         // ADMIN: acceso total
-        manager.createUser(User.withUsername("admin")
-                .password(encoder.encode("admin123"))
+        manager.createUser(User.withUsername("adminsupremo")
+                .password(encoder.encode("adminsupremo"))
                 .roles("ADMIN")
                 .build());
 
