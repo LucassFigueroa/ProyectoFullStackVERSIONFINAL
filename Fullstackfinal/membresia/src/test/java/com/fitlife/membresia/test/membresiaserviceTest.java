@@ -41,10 +41,10 @@ class membresiaserviceTest {
     }
 
     @Test
-    void guardarMembresia_deberiaGuardarCorrectamente() {
+    void saveMembresia_deberiaGuardarCorrectamente() {
         when(membresiaRepository.save(any(membresiamodel.class))).thenReturn(membresia);
 
-        membresiamodel guardada = membresiaService.guardarMembresia(membresia);
+        membresiamodel guardada = membresiaService.saveMembresia(membresia);
 
         assertNotNull(guardada);
         assertEquals("Premium", guardada.getTipo());
@@ -52,81 +52,63 @@ class membresiaserviceTest {
     }
 
     @Test
-    void obtenerTodas_deberiaRetornarLista() {
+    void getAllMembresias_deberiaRetornarLista() {
         when(membresiaRepository.findAll()).thenReturn(List.of(membresia));
 
-        List<membresiamodel> lista = membresiaService.obtenerTodas();
+        List<membresiamodel> lista = membresiaService.getAllMembresias();
 
         assertEquals(1, lista.size());
         verify(membresiaRepository).findAll();
     }
 
     @Test
-    void obtenerPorId_deberiaRetornarObjeto() {
+    void getMembresiaById_deberiaRetornarObjeto() {
         when(membresiaRepository.findById(1L)).thenReturn(Optional.of(membresia));
 
-        Optional<membresiamodel> encontrado = membresiaService.obtenerPorId(1L);
+        membresiamodel encontrado = membresiaService.getMembresiaById(1L);
 
-        assertTrue(encontrado.isPresent());
-        assertEquals(1L, encontrado.get().getId());
+        assertNotNull(encontrado);
+        assertEquals(1L, encontrado.getId());
     }
 
     @Test
-    void actualizarMembresia_deberiaActualizarSiExiste() {
-        when(membresiaRepository.existsById(1L)).thenReturn(true);
+    void updateMembresia_deberiaActualizarSiExiste() {
+        when(membresiaRepository.findById(1L)).thenReturn(Optional.of(membresia));
         when(membresiaRepository.save(any(membresiamodel.class))).thenReturn(membresia);
 
-        membresiamodel actualizado = membresiaService.actualizarMembresia(1L, membresia);
+        membresiamodel actualizado = membresiaService.updateMembresia(1L, membresia);
 
         assertNotNull(actualizado);
-        verify(membresiaRepository).save(membresia);
+        verify(membresiaRepository).save(any());
     }
 
     @Test
-    void actualizarMembresia_deberiaLanzarExcepcionSiNoExiste() {
-        when(membresiaRepository.existsById(1L)).thenReturn(false);
+    void updateMembresia_noExiste_deberiaRetornarNull() {
+        when(membresiaRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            membresiaService.actualizarMembresia(1L, membresia);
-        });
+        membresiamodel actualizado = membresiaService.updateMembresia(1L, membresia);
 
-        verify(membresiaRepository, never()).save(any());
+        assertNull(actualizado);
     }
 
     @Test
-    void eliminarMembresia_deberiaEjecutarDeleteById() {
+    void deleteMembresia_deberiaEjecutarDeleteById() {
         when(membresiaRepository.existsById(1L)).thenReturn(true);
         doNothing().when(membresiaRepository).deleteById(1L);
 
-        membresiaService.eliminarMembresia(1L);
+        boolean deleted = membresiaService.deleteMembresia(1L);
 
+        assertTrue(deleted);
         verify(membresiaRepository).deleteById(1L);
     }
 
     @Test
-    void buscarPorUsuario_deberiaRetornarLista() {
-        when(membresiaRepository.findByUsuarioId(123L)).thenReturn(List.of(membresia));
+    void deleteMembresia_noExiste_deberiaRetornarFalse() {
+        when(membresiaRepository.existsById(1L)).thenReturn(false);
 
-        List<membresiamodel> lista = membresiaService.buscarPorUsuario(123L);
+        boolean deleted = membresiaService.deleteMembresia(1L);
 
-        assertEquals(1, lista.size());
-    }
-
-    @Test
-    void buscarPorEstado_deberiaRetornarLista() {
-        when(membresiaRepository.findByEstadoIgnoreCase("Activa")).thenReturn(List.of(membresia));
-
-        List<membresiamodel> lista = membresiaService.buscarPorEstado("Activa");
-
-        assertEquals(1, lista.size());
-    }
-
-    @Test
-    void buscarPorUsuarioYEstado_deberiaRetornarLista() {
-        when(membresiaRepository.findByUsuarioIdAndEstadoIgnoreCase(123L, "Activa")).thenReturn(List.of(membresia));
-
-        List<membresiamodel> lista = membresiaService.buscarPorUsuarioYEstado(123L, "Activa");
-
-        assertEquals(1, lista.size());
+        assertFalse(deleted);
+        verify(membresiaRepository, never()).deleteById(any());
     }
 }
