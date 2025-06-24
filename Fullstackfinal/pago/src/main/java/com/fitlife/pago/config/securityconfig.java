@@ -19,27 +19,27 @@ public class securityconfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // Swagger abierto
+                // Swagger libre
                 .requestMatchers(
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html"
                 ).permitAll()
 
-                // GET /pago/** -> ADMIN, SOPORTE, STAFF
+                // GET protegido: ADMIN, SOPORTE, STAFF
                 .requestMatchers(HttpMethod.GET, "/pago/**").hasAnyRole("ADMIN", "SOPORTE", "STAFF")
 
-                // POST y PUT -> ADMIN, STAFF
+                // POST y PUT: ADMIN, STAFF
                 .requestMatchers(HttpMethod.POST, "/pago/**").hasAnyRole("ADMIN", "STAFF")
                 .requestMatchers(HttpMethod.PUT, "/pago/**").hasAnyRole("ADMIN", "STAFF")
 
-                // DELETE -> SOLO ADMIN
+                // DELETE: solo ADMIN
                 .requestMatchers(HttpMethod.DELETE, "/pago/**").hasRole("ADMIN")
 
                 // Todo lo demás autenticado
                 .anyRequest().authenticated()
             )
-            .httpBasic();
+            .httpBasic(); // SOLO BASIC AUTH, sin formLogin
         return http.build();
     }
 
@@ -60,3 +60,9 @@ public class securityconfig {
                 .build()
         );
     }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
