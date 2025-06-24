@@ -2,121 +2,112 @@ package com.fitlife.pago.controller;
 
 import com.fitlife.pago.model.pagomodel;
 import com.fitlife.pago.service.pagoservice;
-import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
+import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
-@RestController 
-@RequestMapping("/pagos") 
+@RestController
+@RequestMapping("/pago")
 public class pagocontroller {
 
-    private final pagoservice pagoService;
+    @Autowired
+    private pagoservice pagoService;
 
-    // Constructor para inyección
-    public pagocontroller(pagoservice pagoService) {
-        this.pagoService = pagoService;
-    }
-
-    // Registrar pago
     @PostMapping
-    public ResponseEntity<?> registrarPago(@Valid @RequestBody pagomodel pago, BindingResult result) {
+    public ResponseEntity<?> crearPago(@Valid @RequestBody pagomodel pago, BindingResult result) {
         if (result.hasErrors()) {
-            Map<String, String> errores = new HashMap<>();
-            result.getFieldErrors().forEach(error ->
-                    errores.put(error.getField(), error.getDefaultMessage()));
-            return ResponseEntity.badRequest().body(errores);
+            return ResponseEntity.badRequest().body(
+                    result.getFieldErrors().stream()
+                            .collect(Collectors.toMap(
+                                    err -> err.getField(),
+                                    err -> err.getDefaultMessage()
+                            ))
+            );
         }
-
-        if (pago.getId() != null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "No debes incluir el ID al crear un pago."));
-        }
-
-        return ResponseEntity.ok(pagoService.guardarPago(pago));
+        return ResponseEntity.ok(toModel(pagoService.crearPago(pago)));
     }
 
-    // Listar todos los pagos
     @GetMapping
-    public List<pagomodel> listarPagos() {
-        return pagoService.obtenerPagos();
+    public CollectionModel<EntityModel<pagomodel>> listarPagos() {
+        List<EntityModel<pagomodel>> pagos = pagoService.listarPagos().stream()
+                .map(this::toModel)
+                .collect(Collectors.toList());
+        return CollectionModel.of(pagos,
+                WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(pagocontroller.class).listarPagos()).withSelfRel());
     }
 
-    // Obtener pago por ID
     @GetMapping("/{id}")
-    public ResponseEntity<?> obtenerPagoPorId(@PathVariable Long id) {
-        Optional<pagomodel> pago = pagoService.obtenerPorId(id);
-
-        if (pago.isPresent()) {
-            return ResponseEntity.ok(pago.get());
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Pago no encontrado"));
+    public ResponseEntity<?> obtenerPago(@PathVariable Long id) {
+        pagomodel pago = pagoService.obtenerPorId(id);
+        if (pago == null) {
+            return ResponseEntity.status(404).body(Map.of("error", "Pago no encontrado"));
         }
+        return ResponseEntity.ok(toModel(pago));
     }
 
-
-
-    // Actualizar pago
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizarPago(@PathVariable Long id,
                                             @Valid @RequestBody pagomodel pago,
                                             BindingResult result) {
         if (result.hasErrors()) {
-            Map<String, String> errores = new HashMap<>();
-            result.getFieldErrors().forEach(error ->
-                    errores.put(error.getField(), error.getDefaultMessage()));
-            return ResponseEntity.badRequest().body(errores);
+            return ResponseEntity.badRequest().body(
+                    result.getFieldErrors().stream()
+                            .collect(Collectors.toMap(
+                                    err -> err.getField(),
+                                    err -> err.getDefaultMessage()
+                            ))
+            );
         }
-        return ResponseEntity.ok(pagoService.actualizarPago(id, pago));
+        return ResponseEntity.ok(toModel(pagoService.actualizarPago(id, pago)));
     }
 
-    // Eliminar pago
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminarPago(@PathVariable Long id) {
         pagoService.eliminarPago(id);
         return ResponseEntity.noContent().build();
     }
 
-    // Filtrar pagos por cliente
-    @GetMapping("/cliente/{idCliente}")
-    public List<pagomodel> pagoPorCliente(@PathVariable Long idCliente) {
-        return pagoService.obtenerPagosPorCliente(idCliente);
+    @GetMapping("/buscarEstado")
+    public List<pagomodel> buscarPorEstado(@RequestParam String estado) {
+        return pagoService.buscarPorEstado(estado);
     }
 
-    // Filtrar pagos por estado
-    @GetMapping("/estado")
-    public List<pagomodel> pagoPorEstado(@RequestParam String estado) {
-        return pagoService.obtenerPagosPorEstado(estado);
+    @GetMapping("/buscarRangoFecha")
+    public List<pagomodel> buscarPorRangoFecha(@RequestParam String desde,
+                                               @RequestParam String hasta) {
+        LocalDate d1 = LocalDate.parse(desde);
+        LocalDate d2 = LocalDate.parse(hasta);
+        return pagoService.buscarPorRangoFecha(d1, d2);
     }
 
-    // Filtrar pagos por cliente y estado
-    @GetMapping("/clienteEstado")
-    public List<pagomodel> pagoPorClienteYEstado(@RequestParam Long idCliente,
-                                                 @RequestParam String estado) {
-        return pagoService.obtenerPagosPorClienteYEstado(idCliente, estado);
+    @GetMapping("/buscarMetodo")
+    public List<pagomodel> buscarPorMetodo(@RequestParam String metodo) {
+        return pagoService.buscarPorMetodo(metodo);
     }
 
-    // Manejador de JSON mal formado
-    @ExceptionHandler({HttpMessageNotReadableException.class})
-    public ResponseEntity<?> manejarErroresJson(Exception ex) {
-        return ResponseEntity.badRequest().body(Map.of(
-                "error", "Los datos enviados no tienen el formato correcto o están mal formateados."
-        ));
+    @GetMapping("/buscarMontoMayor")
+    public List<pagomodel> buscarPorMontoMayor(@RequestParam Double monto) {
+        return pagoService.buscarPorMontoMayor(monto);
+    }
+
+    @GetMapping("/buscarMontoMenor")
+    public List<pagomodel> buscarPorMontoMenor(@RequestParam Double monto) {
+        return pagoService.buscarPorMontoMenor(monto);
+    }
+
+    private EntityModel<pagomodel> toModel(pagomodel pago) {
+        return EntityModel.of(pago,
+                WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(pagocontroller.class).obtenerPago(pago.getId())).withSelfRel(),
+                WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(pagocontroller.class).listarPagos()).withRel("all-pagos"));
     }
 }

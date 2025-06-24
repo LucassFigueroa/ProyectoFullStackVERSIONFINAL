@@ -3,7 +3,6 @@ package com.fitlife.pago.test;
 import com.fitlife.pago.model.pagomodel;
 import com.fitlife.pago.repository.pagorepository;
 import com.fitlife.pago.service.pagoservice;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -14,24 +13,16 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class pagoserviceTest {
 
-    @InjectMocks
-    private pagoservice pagoService;
-
     @Mock
     private pagorepository pagoRepository;
+
+    @InjectMocks
+    private pagoservice pagoService;
 
     private pagomodel pago;
 
@@ -40,125 +31,86 @@ class pagoserviceTest {
         MockitoAnnotations.openMocks(this);
         pago = pagomodel.builder()
                 .id(1L)
-                .idCliente(1L)
-                .monto(100.0)
+                .estado("Pagado")
                 .metodoPago("Tarjeta")
+                .monto(15000.0)
                 .fechaPago(LocalDate.now())
-                .estado("Pendiente")
                 .build();
     }
 
     @Test
-    void testGuardarPago() {
-        when(pagoRepository.save(any(pagomodel.class))).thenReturn(pago);
-
-        pagomodel resultado = pagoService.guardarPago(pago);
-
-        assertNotNull(resultado);
-        assertEquals(1L, resultado.getId());
-        verify(pagoRepository, times(1)).save(pago);
+    void crearPago_ok() {
+        when(pagoRepository.save(pago)).thenReturn(pago);
+        assertNotNull(pagoService.crearPago(pago));
     }
 
     @Test
-    void testObtenerPagos() {
+    void listarPagos_ok() {
         when(pagoRepository.findAll()).thenReturn(List.of(pago));
-
-        List<pagomodel> lista = pagoService.obtenerPagos();
-
-        assertNotNull(lista);
-        assertEquals(1, lista.size());
-        verify(pagoRepository, times(1)).findAll();
+        assertEquals(1, pagoService.listarPagos().size());
     }
 
     @Test
-    void testObtenerPorId() {
+    void obtenerPorId_ok() {
         when(pagoRepository.findById(1L)).thenReturn(Optional.of(pago));
-
-        Optional<pagomodel> resultado = pagoService.obtenerPorId(1L);
-
-        assertTrue(resultado.isPresent());
-        assertEquals(1L, resultado.get().getId());
-        verify(pagoRepository, times(1)).findById(1L);
+        assertEquals("Pagado", pagoService.obtenerPorId(1L).getEstado());
     }
 
     @Test
-    void testActualizarPago() {
+    void actualizarPago_ok() {
         when(pagoRepository.existsById(1L)).thenReturn(true);
-        when(pagoRepository.save(any(pagomodel.class))).thenReturn(pago);
-
-        pagomodel resultado = pagoService.actualizarPago(1L, pago);
-
-        assertNotNull(resultado);
-        assertEquals(1L, resultado.getId());
-        verify(pagoRepository, times(1)).existsById(1L);
-        verify(pagoRepository, times(1)).save(pago);
+        when(pagoRepository.save(pago)).thenReturn(pago);
+        assertEquals("Pagado", pagoService.actualizarPago(1L, pago).getEstado());
     }
 
     @Test
-    void testEliminarPago() {
+    void actualizarPago_noExiste() {
+        when(pagoRepository.existsById(1L)).thenReturn(false);
+        assertThrows(IllegalArgumentException.class, () -> pagoService.actualizarPago(1L, pago));
+    }
+
+    @Test
+    void eliminarPago_ok() {
         when(pagoRepository.existsById(1L)).thenReturn(true);
         doNothing().when(pagoRepository).deleteById(1L);
-
         pagoService.eliminarPago(1L);
-
-        verify(pagoRepository, times(1)).existsById(1L);
-        verify(pagoRepository, times(1)).deleteById(1L);
+        verify(pagoRepository).deleteById(1L);
     }
 
     @Test
-    void testObtenerPagosPorCliente() {
-        when(pagoRepository.findByIdCliente(1L)).thenReturn(List.of(pago));
-
-        List<pagomodel> lista = pagoService.obtenerPagosPorCliente(1L);
-
-        assertNotNull(lista);
-        assertEquals(1, lista.size());
-        verify(pagoRepository, times(1)).findByIdCliente(1L);
+    void eliminarPago_noExiste() {
+        when(pagoRepository.existsById(1L)).thenReturn(false);
+        assertThrows(IllegalArgumentException.class, () -> pagoService.eliminarPago(1L));
     }
 
     @Test
-    void testObtenerPagosPorEstado() {
-        when(pagoRepository.findByEstado("Pendiente")).thenReturn(List.of(pago));
-
-        List<pagomodel> lista = pagoService.obtenerPagosPorEstado("Pendiente");
-
-        assertNotNull(lista);
-        assertEquals(1, lista.size());
-        verify(pagoRepository, times(1)).findByEstado("Pendiente");
+    void buscarPorEstado_ok() {
+        when(pagoRepository.findByEstadoIgnoreCase("Pagado")).thenReturn(List.of(pago));
+        assertEquals(1, pagoService.buscarPorEstado("Pagado").size());
     }
 
     @Test
-    void testObtenerPagosPorClienteYEstado() {
-        when(pagoRepository.findByIdClienteAndEstado(1L, "Pendiente")).thenReturn(List.of(pago));
-
-        List<pagomodel> lista = pagoService.obtenerPagosPorClienteYEstado(1L, "Pendiente");
-
-        assertNotNull(lista);
-        assertEquals(1, lista.size());
-        verify(pagoRepository, times(1)).findByIdClienteAndEstado(1L, "Pendiente");
+    void buscarPorRangoFecha_ok() {
+        LocalDate fecha = LocalDate.now();
+        when(pagoRepository.findByFechaPagoBetween(fecha, fecha)).thenReturn(List.of(pago));
+        assertEquals(1, pagoService.buscarPorRangoFecha(fecha, fecha).size());
     }
 
     @Test
-    void testActualizarPago_NoExiste() {
-        when(pagoRepository.existsById(99L)).thenReturn(false);
-
-        Exception exception = assertThrows(IllegalArgumentException.class, () ->
-                pagoService.actualizarPago(99L, pago)
-        );
-
-        assertEquals("Pago con ID 99 no existe", exception.getMessage());
-        verify(pagoRepository, times(1)).existsById(99L);
+    void buscarPorMetodo_ok() {
+        when(pagoRepository.findByMetodoPagoIgnoreCase("Tarjeta")).thenReturn(List.of(pago));
+        assertEquals(1, pagoService.buscarPorMetodo("Tarjeta").size());
     }
 
     @Test
-    void testEliminarPago_NoExiste() {
-        when(pagoRepository.existsById(99L)).thenReturn(false);
+    void buscarPorMontoMayor_ok() {
+        when(pagoRepository.findByMontoGreaterThan(10000.0)).thenReturn(List.of(pago));
+        assertEquals(1, pagoService.buscarPorMontoMayor(10000.0).size());
+    }
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () ->
-                pagoService.eliminarPago(99L)
-        );
-
-        assertEquals("Pago con ID 99 no existe", exception.getMessage());
-        verify(pagoRepository, times(1)).existsById(99L);
+    @Test
+    void buscarPorMontoMenor_ok() {
+        when(pagoRepository.findByMontoLessThan(20000.0)).thenReturn(List.of(pago));
+        assertEquals(1, pagoService.buscarPorMontoMenor(20000.0).size());
     }
 }
