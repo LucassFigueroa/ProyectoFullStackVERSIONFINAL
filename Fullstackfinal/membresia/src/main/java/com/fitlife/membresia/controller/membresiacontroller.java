@@ -2,115 +2,65 @@ package com.fitlife.membresia.controller;
 
 import com.fitlife.membresia.model.membresiamodel;
 import com.fitlife.membresia.service.membresiaservice;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
-@RequestMapping("/membresias")
+@RequestMapping("/api/membresias")
 public class membresiacontroller {
 
     @Autowired
-    private membresiaservice membresiaService;
+    private membresiaservice membresiaservice;
 
-    // Crear nueva membresia
     @PostMapping
-    public ResponseEntity<?> crear(@Valid @RequestBody membresiamodel membresia, BindingResult result) {
-        if (result.hasErrors()) {
-            Map<String, String> errores = new HashMap<>();
-            result.getFieldErrors().forEach(error ->
-                    errores.put(error.getField(), error.getDefaultMessage())
-            );
-            return ResponseEntity.badRequest().body(errores);
-        }
-
-        if (membresia.getId() != null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "No debes incluir el ID al crear una membresía."));
-        }
-
-        return ResponseEntity.ok(membresiaService.guardarMembresia(membresia));
+    public ResponseEntity<EntityModel<membresiamodel>> createMembresia(@RequestBody membresiamodel membresia) {
+        membresiamodel saved = membresiaservice.saveMembresia(membresia);
+        EntityModel<membresiamodel> resource = EntityModel.of(saved,
+                linkTo(methodOn(membresiacontroller.class).getMembresiaById(saved.getId())).withSelfRel(),
+                linkTo(methodOn(membresiacontroller.class).getAllMembresias()).withRel("all-membresias"));
+        return ResponseEntity.ok(resource);
     }
 
-    // Listar todas
     @GetMapping
-    public List<membresiamodel> obtener() {
-        return membresiaService.obtenerTodas();
+    public CollectionModel<EntityModel<membresiamodel>> getAllMembresias() {
+        List<EntityModel<membresiamodel>> membresias = membresiaservice.getAllMembresias().stream()
+                .map(m -> EntityModel.of(m,
+                        linkTo(methodOn(membresiacontroller.class).getMembresiaById(m.getId())).withSelfRel()))
+                .collect(Collectors.toList());
+        return CollectionModel.of(membresias,
+                linkTo(methodOn(membresiacontroller.class).getAllMembresias()).withSelfRel());
     }
 
-    // Buscar por ID
     @GetMapping("/{id}")
-    public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
-        Optional<membresiamodel> membresia = membresiaService.obtenerPorId(id);
-        if (membresia.isPresent()) {
-            return ResponseEntity.ok(membresia.get());
+    public ResponseEntity<EntityModel<membresiamodel>> getMembresiaById(@PathVariable Long id) {
+        membresiamodel membresia = membresiaservice.getMembresiaById(id);
+        if (membresia != null) {
+            EntityModel<membresiamodel> resource = EntityModel.of(membresia,
+                    linkTo(methodOn(membresiacontroller.class).getMembresiaById(id)).withSelfRel(),
+                    linkTo(methodOn(membresiacontroller.class).getAllMembresias()).withRel("all-membresias"));
+            return ResponseEntity.ok(resource);
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Membresía no encontrada"));
+            return ResponseEntity.notFound().build();
         }
     }
 
-    // Actualizar membresia
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizar(@PathVariable Long id, @Valid @RequestBody membresiamodel membresia, BindingResult result) {
-        if (result.hasErrors()) {
-            Map<String, String> errores = new HashMap<>();
-            result.getFieldErrors().forEach(error ->
-                    errores.put(error.getField(), error.getDefaultMessage()));
-            return ResponseEntity.badRequest().body(errores);
-        }
-        return ResponseEntity.ok(membresiaService.actualizarMembresia(id, membresia));
+    public ResponseEntity<membresiamodel> updateMembresia(@PathVariable Long id, @RequestBody membresiamodel membresia) {
+        membresiamodel updated = membresiaservice.updateMembresia(id, membresia);
+        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
     }
 
-    // Eliminar o cancelar membresia
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        membresiaService.eliminarMembresia(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // Buscar por usuario
-    @GetMapping("/buscarPorUsuario")
-    public List<membresiamodel> buscarPorUsuario(@RequestParam Long usuarioId) {
-        return membresiaService.buscarPorUsuario(usuarioId);
-    }
-
-    // Buscar por estado
-    @GetMapping("/buscarPorEstado")
-    public List<membresiamodel> buscarPorEstado(@RequestParam String estado) {
-        return membresiaService.buscarPorEstado(estado);
-    }
-
-    // Buscar por usuario + estado
-    @GetMapping("/buscarPorUsuarioYEstado")
-    public List<membresiamodel> buscarPorUsuarioYEstado(
-            @RequestParam Long usuarioId,
-            @RequestParam String estado) {
-        return membresiaService.buscarPorUsuarioYEstado(usuarioId, estado);
-    }
-
-    // Manejar JSON mal formados
-    @ExceptionHandler({HttpMessageNotReadableException.class})
-    public ResponseEntity<?> manejarErroresJson(Exception ex) {
-        return ResponseEntity.badRequest().body(Map.of(
-                "error", "Los datos enviados no tienen el formato correcto o están mal formateados."
-        ));
+    public ResponseEntity<Void> deleteMembresia(@PathVariable Long id) {
+        boolean deleted = membresiaservice.deleteMembresia(id);
+        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
 }

@@ -2,64 +2,45 @@ package com.fitlife.membresia.service;
 
 import com.fitlife.membresia.model.membresiamodel;
 import com.fitlife.membresia.repository.membresiarepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class membresiaservice {
 
-    private final membresiarepository membresiaRepository;
+    @Autowired
+    private membresiarepository membresiarepository;
 
-    public membresiaservice(membresiarepository membresiaRepository) {
-        this.membresiaRepository = membresiaRepository;
+    public membresiamodel saveMembresia(membresiamodel membresia) {
+        return membresiarepository.save(membresia);
     }
 
-    // Crear nueva membresia
-    public membresiamodel guardarMembresia(membresiamodel membresia) {
-        return membresiaRepository.save(membresia);
+    public List<membresiamodel> getAllMembresias() {
+        return membresiarepository.findAll();
     }
 
-    // Listar todas las membresias
-    public List<membresiamodel> obtenerTodas() {
-        return membresiaRepository.findAll();
+    public membresiamodel getMembresiaById(Long id) {
+        return membresiarepository.findById(id).orElse(null);
     }
 
-    // Buscar membresia por ID
-    public Optional<membresiamodel> obtenerPorId(Long id) {
-        return membresiaRepository.findById(id);
+    public membresiamodel updateMembresia(Long id, membresiamodel details) {
+        return membresiarepository.findById(id).map(m -> {
+            m.setUsuarioId(details.getUsuarioId());
+            m.setTipo(details.getTipo());
+            m.setFechaInicio(details.getFechaInicio());
+            m.setFechaFin(details.getFechaFin());
+            m.setEstado(details.getEstado());
+            return membresiarepository.save(m);
+        }).orElse(null);
     }
 
-    // Actualizar membresia existente
-    public membresiamodel actualizarMembresia(Long id, membresiamodel membresia) {
-        if (!membresiaRepository.existsById(id)) {
-            throw new IllegalArgumentException("La membresía con ID " + id + " no existe.");
+    public boolean deleteMembresia(Long id) {
+        if (membresiarepository.existsById(id)) {
+            membresiarepository.deleteById(id);
+            return true;
         }
-        membresia.setId(id);
-        return membresiaRepository.save(membresia);
-    }
-
-    // Eliminar membresia por ID (cancelar o borrar física)
-    public void eliminarMembresia(Long id) {
-        if (!membresiaRepository.existsById(id)) {
-            throw new IllegalArgumentException("La membresía con ID " + id + " no existe.");
-        }
-        membresiaRepository.deleteById(id);
-    }
-
-    // Filtrar por usuario
-    public List<membresiamodel> buscarPorUsuario(Long usuarioId) {
-        return membresiaRepository.findByUsuarioId(usuarioId);
-    }
-
-    // Filtrar por estado (Activa, Cancelada, Expirada)
-    public List<membresiamodel> buscarPorEstado(String estado) {
-        return membresiaRepository.findByEstadoIgnoreCase(estado);
-    }
-
-    // Filtrar por usuario + estado
-    public List<membresiamodel> buscarPorUsuarioYEstado(Long usuarioId, String estado) {
-        return membresiaRepository.findByUsuarioIdAndEstadoIgnoreCase(usuarioId, estado);
+        return false;
     }
 }

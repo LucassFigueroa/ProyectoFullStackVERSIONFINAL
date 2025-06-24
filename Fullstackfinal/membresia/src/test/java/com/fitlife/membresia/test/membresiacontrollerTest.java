@@ -7,6 +7,7 @@ import com.fitlife.membresia.service.membresiaservice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,17 +17,15 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @WebMvcTest(membresiacontroller.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -57,50 +56,45 @@ public class membresiacontrollerTest {
 
     @Test
     void crearMembresia_deberiaRetornarOk() throws Exception {
-        membresiamodel nuevo = membresiamodel.builder()
-                .usuarioId(123L)
-                .tipo("Premium")
-                .fechaInicio(LocalDate.now())
-                .fechaFin(LocalDate.now().plusMonths(1))
-                .estado("Activa")
-                .build();
+        when(membresiaService.saveMembresia(any(membresiamodel.class))).thenReturn(membresia);
 
-        when(membresiaService.guardarMembresia(any(membresiamodel.class))).thenReturn(membresia);
-
-        mockMvc.perform(post("/membresias")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(nuevo)))
+        mockMvc.perform(post("/api/membresias")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(membresia)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.usuarioId").value(123L))
-                .andExpect(jsonPath("$.tipo").value("Premium"));
+                .andExpect(jsonPath("$.tipo").value("Premium"))
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
     void listarMembresias_deberiaRetornarLista() throws Exception {
-        when(membresiaService.obtenerTodas()).thenReturn(List.of(membresia));
+        when(membresiaService.getAllMembresias()).thenReturn(List.of(membresia));
 
-        mockMvc.perform(get("/membresias"))
+        mockMvc.perform(get("/api/membresias"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1L));
+                .andExpect(jsonPath("$._embedded.membresiamodelList[0].id").value(1L))
+                .andExpect(jsonPath("$._embedded.membresiamodelList[0]._links.self.href").exists());
     }
 
     @Test
     void obtenerPorId_deberiaRetornarObjeto() throws Exception {
-        when(membresiaService.obtenerPorId(1L)).thenReturn(Optional.of(membresia));
+        when(membresiaService.getMembresiaById(1L)).thenReturn(membresia);
 
-        mockMvc.perform(get("/membresias/1"))
+        mockMvc.perform(get("/api/membresias/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.tipo").value("Premium"));
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.tipo").value("Premium"))
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
     void obtenerPorId_noExiste_deberiaRetornarNotFound() throws Exception {
-        when(membresiaService.obtenerPorId(999L)).thenReturn(Optional.empty());
+        when(membresiaService.getMembresiaById(999L)).thenReturn(null);
 
-        mockMvc.perform(get("/membresias/999"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("Membresía no encontrada"));
+        mockMvc.perform(get("/api/membresias/999"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -113,20 +107,28 @@ public class membresiacontrollerTest {
                 .estado("Activa")
                 .build();
 
-        when(membresiaService.actualizarMembresia(eq(1L), any(membresiamodel.class))).thenReturn(actualizado);
+        when(membresiaService.updateMembresia(eq(1L), any(membresiamodel.class))).thenReturn(actualizado);
 
-        mockMvc.perform(put("/membresias/1")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(actualizado)))
+        mockMvc.perform(put("/api/membresias/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(actualizado)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.tipo").value("Premium Plus"));
     }
 
     @Test
     void eliminarMembresia_deberiaRetornarNoContent() throws Exception {
-        Mockito.doNothing().when(membresiaService).eliminarMembresia(1L);
+        when(membresiaService.deleteMembresia(1L)).thenReturn(true);
 
-        mockMvc.perform(delete("/membresias/1"))
+        mockMvc.perform(delete("/api/membresias/1"))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void eliminarMembresia_NoExiste_deberiaRetornarNotFound() throws Exception {
+        when(membresiaService.deleteMembresia(1L)).thenReturn(false);
+
+        mockMvc.perform(delete("/api/membresias/1"))
+                .andExpect(status().isNotFound());
     }
 }
