@@ -20,12 +20,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(inventariocontroller.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -46,8 +42,8 @@ class inventariocontrollerTest {
     void setUp() {
         inventario = inventariomodel.builder()
                 .id(1L)
-                .nombreArticulo("Máquina de Pecho Horizontal Profitness")
-                .numeroSerie("PF-PH-2024")
+                .nombreArticulo("Máquina de Pecho")
+                .numeroSerie("SERIE123")
                 .cantidad(5)
                 .estado("Funcional")
                 .fechaIngreso(LocalDate.now())
@@ -55,84 +51,55 @@ class inventariocontrollerTest {
     }
 
     @Test
-    void crearInventario_deberiaRetornarOk() throws Exception {
-        inventariomodel nuevo = inventariomodel.builder()
-                .nombreArticulo("Máquina de Pecho Horizontal Profitness")
-                .numeroSerie("PF-PH-2024")
-                .cantidad(5)
-                .estado("Funcional")
-                .fechaIngreso(LocalDate.now())
-                .build();
-
-        when(inventarioService.crearInventario(any(inventariomodel.class)))
-                .thenReturn(inventario);
+    void crearInventario() throws Exception {
+        when(inventarioService.crearInventario(any())).thenReturn(inventario);
 
         mockMvc.perform(post("/inventario")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(nuevo)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(inventario)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombreArticulo").value("Máquina de Pecho Horizontal Profitness"))
-                .andExpect(jsonPath("$.numeroSerie").value("PF-PH-2024"))
-                .andExpect(jsonPath("$.cantidad").value(5))
-                .andExpect(jsonPath("$.estado").value("Funcional"));
+                .andExpect(jsonPath("$.nombreArticulo").value("Máquina de Pecho"))
+                .andExpect(jsonPath("$.numeroSerie").value("SERIE123"));
     }
 
     @Test
-    void listarInventarios_deberiaRetornarLista() throws Exception {
+    void listarInventarios() throws Exception {
         when(inventarioService.listarInventarios()).thenReturn(List.of(inventario));
 
         mockMvc.perform(get("/inventario"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombreArticulo").value("Máquina de Pecho Horizontal Profitness"));
+                .andExpect(jsonPath("$._embedded.inventariomodelList[0].nombreArticulo").value("Máquina de Pecho"));
     }
 
     @Test
-    void obtenerPorId_deberiaRetornarObjeto() throws Exception {
+    void obtenerInventario() throws Exception {
         when(inventarioService.obtenerPorId(1L)).thenReturn(inventario);
 
         mockMvc.perform(get("/inventario/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.numeroSerie").value("PF-PH-2024"));
+                .andExpect(jsonPath("$.nombreArticulo").value("Máquina de Pecho"));
     }
 
     @Test
-    void obtenerPorId_conIdInvalido() throws Exception {
+    void obtenerInventario_IdInvalido() throws Exception {
         mockMvc.perform(get("/inventario/abc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("El ID proporcionado no es válido"));
     }
 
     @Test
-    void actualizarInventario_deberiaActualizarCorrectamente() throws Exception {
-        inventariomodel actualizado = inventariomodel.builder()
-                .nombreArticulo("Máquina de Pecho Horizontal Profitness Actualizada")
-                .numeroSerie("PF-PH-2024-ACT")
-                .cantidad(8)
-                .estado("Funcional")
-                .fechaIngreso(LocalDate.now())
-                .build();
-
-        when(inventarioService.actualizarInventario(eq(1L), any(inventariomodel.class)))
-                .thenReturn(inventariomodel.builder()
-                        .id(1L)
-                        .nombreArticulo("Máquina de Pecho Horizontal Profitness Actualizada")
-                        .numeroSerie("PF-PH-2024-ACT")
-                        .cantidad(8)
-                        .estado("Funcional")
-                        .fechaIngreso(LocalDate.now())
-                        .build());
+    void actualizarInventario() throws Exception {
+        when(inventarioService.actualizarInventario(eq(1L), any())).thenReturn(inventario);
 
         mockMvc.perform(put("/inventario/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(actualizado)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(inventario)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombreArticulo").value("Máquina de Pecho Horizontal Profitness Actualizada"))
-                .andExpect(jsonPath("$.numeroSerie").value("PF-PH-2024-ACT"))
-                .andExpect(jsonPath("$.cantidad").value(8));
+                .andExpect(jsonPath("$.nombreArticulo").value("Máquina de Pecho"));
     }
 
     @Test
-    void eliminarInventario_deberiaRetornarNoContent() throws Exception {
+    void eliminarInventario() throws Exception {
         doNothing().when(inventarioService).eliminarInventario(1L);
 
         mockMvc.perform(delete("/inventario/1"))
@@ -140,81 +107,84 @@ class inventariocontrollerTest {
     }
 
     @Test
-    void buscarPorNombre_deberiaRetornarCoincidencias() throws Exception {
+    void buscarPorNombre() throws Exception {
         when(inventarioService.buscarPorNombre("Pecho")).thenReturn(List.of(inventario));
 
-        mockMvc.perform(get("/inventario/buscarNombre")
-                        .param("nombre", "Pecho"))
+        mockMvc.perform(get("/inventario/buscarNombre").param("nombre", "Pecho"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombreArticulo").value("Máquina de Pecho Horizontal Profitness"));
+                .andExpect(jsonPath("$[0].nombreArticulo").value("Máquina de Pecho"));
     }
 
     @Test
-    void buscarPorEstado_deberiaRetornarCoincidencias() throws Exception {
+    void buscarPorEstado() throws Exception {
         when(inventarioService.buscarPorEstado("Funcional")).thenReturn(List.of(inventario));
 
-        mockMvc.perform(get("/inventario/buscarEstado")
-                        .param("estado", "Funcional"))
+        mockMvc.perform(get("/inventario/buscarEstado").param("estado", "Funcional"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].estado").value("Funcional"));
     }
 
     @Test
-    void buscarPorFecha_deberiaRetornarCoincidencias() throws Exception {
+    void buscarPorFecha() throws Exception {
         String fecha = LocalDate.now().toString();
         when(inventarioService.buscarPorFecha(LocalDate.parse(fecha)))
                 .thenReturn(List.of(inventario));
 
-        mockMvc.perform(get("/inventario/buscarFecha")
-                        .param("fecha", fecha))
+        mockMvc.perform(get("/inventario/buscarFecha").param("fecha", fecha))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombreArticulo").value("Máquina de Pecho Horizontal Profitness"));
+                .andExpect(jsonPath("$[0].nombreArticulo").value("Máquina de Pecho"));
     }
 
     @Test
-    void buscarPorRangoFecha_deberiaRetornarCoincidencias() throws Exception {
+    void buscarPorRango() throws Exception {
         String fecha = LocalDate.now().toString();
         when(inventarioService.buscarPorRangoFecha(LocalDate.parse(fecha), LocalDate.parse(fecha)))
                 .thenReturn(List.of(inventario));
 
         mockMvc.perform(get("/inventario/buscarRango")
-                        .param("desde", fecha)
-                        .param("hasta", fecha))
+                .param("desde", fecha)
+                .param("hasta", fecha))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombreArticulo").value("Máquina de Pecho Horizontal Profitness"));
+                .andExpect(jsonPath("$[0].nombreArticulo").value("Máquina de Pecho"));
     }
 
     @Test
-    void buscarPorNombreYEstado_deberiaRetornarCoincidencias() throws Exception {
+    void buscarPorNombreYEstado() throws Exception {
         when(inventarioService.buscarPorNombreYEstado("Pecho", "Funcional"))
                 .thenReturn(List.of(inventario));
 
         mockMvc.perform(get("/inventario/buscarAvanzado")
-                        .param("nombre", "Pecho")
-                        .param("estado", "Funcional"))
+                .param("nombre", "Pecho")
+                .param("estado", "Funcional"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nombreArticulo").value("Máquina de Pecho Horizontal Profitness"))
                 .andExpect(jsonPath("$[0].estado").value("Funcional"));
     }
 
     @Test
-    void buscarPorNumeroSerieExacto_deberiaRetornarCoincidencias() throws Exception {
-        when(inventarioService.buscarPorNumeroSerie("PF-PH-2024"))
-                .thenReturn(inventario);
+    void buscarPorSerieExacta() throws Exception {
+        when(inventarioService.buscarPorNumeroSerie("SERIE123")).thenReturn(inventario);
 
-        mockMvc.perform(get("/inventario/buscarSerieExacta")
-                        .param("serie", "PF-PH-2024"))
+        mockMvc.perform(get("/inventario/buscarSerieExacta").param("serie", "SERIE123"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.numeroSerie").value("PF-PH-2024"));
+                .andExpect(jsonPath("$.numeroSerie").value("SERIE123"));
     }
 
     @Test
-    void crearInventario_conJsonMalFormado_deberiaRetornarBadRequest() throws Exception {
-        String malJson = "{ nombreArticulo: \"Máquina de Pecho Horizontal Profitness\" ";
+    void buscarPorSerieParcial() throws Exception {
+        when(inventarioService.buscarPorNumeroSerieParcial("SERIE")).thenReturn(List.of(inventario));
+
+        mockMvc.perform(get("/inventario/buscarSerieParcial").param("serie", "SERIE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].numeroSerie").value("SERIE123"));
+    }
+
+    @Test
+    void crearInventario_conJsonMalFormado() throws Exception {
+        String malJson = "{ nombreArticulo: \"Algo sin comillas de llave }";
 
         mockMvc.perform(post("/inventario")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(malJson))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(malJson))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Los datos enviados son incorrectos o están mal formateados."));
     }

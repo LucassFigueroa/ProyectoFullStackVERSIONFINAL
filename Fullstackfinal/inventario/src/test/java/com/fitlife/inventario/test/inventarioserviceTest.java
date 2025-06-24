@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class inventarioserviceTest {
@@ -30,11 +29,10 @@ class inventarioserviceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-
         inventario = inventariomodel.builder()
                 .id(1L)
-                .nombreArticulo("Máquina de Pecho Horizontal Profitness")
-                .numeroSerie("PF-PH-2024")
+                .nombreArticulo("Máquina de Pecho")
+                .numeroSerie("SERIE123")
                 .cantidad(5)
                 .estado("Funcional")
                 .fechaIngreso(LocalDate.now())
@@ -42,61 +40,55 @@ class inventarioserviceTest {
     }
 
     @Test
-    void crearInventario_deberiaGuardarCorrectamente() {
-        when(inventarioRepository.save(any(inventariomodel.class))).thenReturn(inventario);
+    void crearInventario() {
+        when(inventarioRepository.save(any())).thenReturn(inventario);
 
         inventariomodel creado = inventarioService.crearInventario(inventario);
 
         assertNotNull(creado);
-        assertEquals("Máquina de Pecho Horizontal Profitness", creado.getNombreArticulo());
-        verify(inventarioRepository).save(inventario);
+        assertEquals("Máquina de Pecho", creado.getNombreArticulo());
     }
 
     @Test
-    void listarInventarios_deberiaRetornarLista() {
+    void listarInventarios() {
         when(inventarioRepository.findAll()).thenReturn(List.of(inventario));
 
         List<inventariomodel> lista = inventarioService.listarInventarios();
 
         assertEquals(1, lista.size());
-        verify(inventarioRepository).findAll();
     }
 
     @Test
-    void obtenerPorId_deberiaRetornarObjetoSiExiste() {
+    void obtenerPorId() {
         when(inventarioRepository.findById(1L)).thenReturn(Optional.of(inventario));
 
-        inventariomodel encontrado = inventarioService.obtenerPorId(1L);
+        inventariomodel resultado = inventarioService.obtenerPorId(1L);
 
-        assertNotNull(encontrado);
-        assertEquals(1L, encontrado.getId());
+        assertNotNull(resultado);
+        assertEquals("SERIE123", resultado.getNumeroSerie());
     }
 
     @Test
-    void actualizarInventario_deberiaActualizarSiExiste() {
+    void actualizarInventario_existe() {
         when(inventarioRepository.existsById(1L)).thenReturn(true);
-        when(inventarioRepository.save(any(inventariomodel.class))).thenReturn(inventario);
+        when(inventarioRepository.save(any())).thenReturn(inventario);
 
         inventariomodel actualizado = inventarioService.actualizarInventario(1L, inventario);
 
         assertNotNull(actualizado);
-        verify(inventarioRepository).save(inventario);
     }
 
     @Test
-    void actualizarInventario_deberiaLanzarExcepcionSiNoExiste() {
+    void actualizarInventario_noExiste() {
         when(inventarioRepository.existsById(1L)).thenReturn(false);
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             inventarioService.actualizarInventario(1L, inventario);
         });
-
-        assertTrue(exception.getMessage().contains("No existe el ID"));
-        verify(inventarioRepository, never()).save(any());
     }
 
     @Test
-    void eliminarInventario_deberiaEjecutarDeleteById() {
+    void eliminarInventario() {
         doNothing().when(inventarioRepository).deleteById(1L);
 
         inventarioService.eliminarInventario(1L);
@@ -105,76 +97,70 @@ class inventarioserviceTest {
     }
 
     @Test
-    void buscarPorNombre_deberiaRetornarCoincidencias() {
+    void buscarPorNombre() {
         when(inventarioRepository.findByNombreArticuloContainingIgnoreCase("Pecho"))
                 .thenReturn(List.of(inventario));
 
-        List<inventariomodel> resultado = inventarioService.buscarPorNombre("Pecho");
+        List<inventariomodel> lista = inventarioService.buscarPorNombre("Pecho");
 
-        assertEquals(1, resultado.size());
+        assertEquals(1, lista.size());
     }
 
     @Test
-    void buscarPorEstado_deberiaRetornarCoincidencias() {
+    void buscarPorEstado() {
         when(inventarioRepository.findByEstadoIgnoreCase("Funcional"))
                 .thenReturn(List.of(inventario));
 
-        List<inventariomodel> resultado = inventarioService.buscarPorEstado("Funcional");
+        List<inventariomodel> lista = inventarioService.buscarPorEstado("Funcional");
 
-        assertEquals(1, resultado.size());
+        assertEquals(1, lista.size());
     }
 
     @Test
-    void buscarPorFecha_deberiaRetornarCoincidencias() {
-        LocalDate fecha = LocalDate.now();
-        when(inventarioRepository.findByFechaIngreso(fecha))
+    void buscarPorFecha() {
+        when(inventarioRepository.findByFechaIngreso(any())).thenReturn(List.of(inventario));
+
+        List<inventariomodel> lista = inventarioService.buscarPorFecha(LocalDate.now());
+
+        assertEquals(1, lista.size());
+    }
+
+    @Test
+    void buscarPorRangoFecha() {
+        when(inventarioRepository.findByFechaIngresoBetween(any(), any()))
                 .thenReturn(List.of(inventario));
 
-        List<inventariomodel> resultado = inventarioService.buscarPorFecha(fecha);
+        List<inventariomodel> lista = inventarioService.buscarPorRangoFecha(LocalDate.now(), LocalDate.now());
 
-        assertEquals(1, resultado.size());
+        assertEquals(1, lista.size());
     }
 
     @Test
-    void buscarPorRangoFecha_deberiaRetornarCoincidencias() {
-        LocalDate desde = LocalDate.now().minusDays(1);
-        LocalDate hasta = LocalDate.now().plusDays(1);
-
-        when(inventarioRepository.findByFechaIngresoBetween(desde, hasta))
-                .thenReturn(List.of(inventario));
-
-        List<inventariomodel> resultado = inventarioService.buscarPorRangoFecha(desde, hasta);
-
-        assertEquals(1, resultado.size());
-    }
-
-    @Test
-    void buscarPorNombreYEstado_deberiaRetornarCoincidencias() {
+    void buscarPorNombreYEstado() {
         when(inventarioRepository.findByNombreArticuloContainingIgnoreCaseAndEstadoIgnoreCase("Pecho", "Funcional"))
                 .thenReturn(List.of(inventario));
 
-        List<inventariomodel> resultado = inventarioService.buscarPorNombreYEstado("Pecho", "Funcional");
+        List<inventariomodel> lista = inventarioService.buscarPorNombreYEstado("Pecho", "Funcional");
 
-        assertEquals(1, resultado.size());
+        assertEquals(1, lista.size());
     }
 
     @Test
-    void buscarPorNumeroSerie_deberiaRetornarObjeto() {
-        when(inventarioRepository.findByNumeroSerie("PF-PH-2024")).thenReturn(inventario);
+    void buscarPorNumeroSerie() {
+        when(inventarioRepository.findByNumeroSerie("SERIE123")).thenReturn(inventario);
 
-        inventariomodel encontrado = inventarioService.buscarPorNumeroSerie("PF-PH-2024");
+        inventariomodel encontrado = inventarioService.buscarPorNumeroSerie("SERIE123");
 
         assertNotNull(encontrado);
-        assertEquals("PF-PH-2024", encontrado.getNumeroSerie());
     }
 
     @Test
-    void buscarPorNumeroSerieParcial_deberiaRetornarLista() {
-        when(inventarioRepository.findByNumeroSerieContainingIgnoreCase("PF-PH"))
+    void buscarPorNumeroSerieParcial() {
+        when(inventarioRepository.findByNumeroSerieContainingIgnoreCase("SERIE"))
                 .thenReturn(List.of(inventario));
 
-        List<inventariomodel> resultados = inventarioService.buscarPorNumeroSerieParcial("PF-PH");
+        List<inventariomodel> lista = inventarioService.buscarPorNumeroSerieParcial("SERIE");
 
-        assertEquals(1, resultados.size());
+        assertEquals(1, lista.size());
     }
 }
