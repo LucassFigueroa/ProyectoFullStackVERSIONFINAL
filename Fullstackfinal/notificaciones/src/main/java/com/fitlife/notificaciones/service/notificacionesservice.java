@@ -2,6 +2,7 @@ package com.fitlife.notificaciones.service;
 
 import com.fitlife.notificaciones.model.notificacionesmodel;
 import com.fitlife.notificaciones.repository.notificacionesrepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,56 +11,45 @@ import java.util.Optional;
 @Service
 public class notificacionesservice {
 
-    private final notificacionesrepository notificacionesRepository;
+    @Autowired
+    private notificacionesrepository notificacionesRepo;
 
-    public notificacionesservice(notificacionesrepository notificacionesRepository) {
-        this.notificacionesRepository = notificacionesRepository;
+    public notificacionesmodel crearNotificacion(notificacionesmodel notif) {
+        return notificacionesRepo.save(notif);
     }
 
-    // Crear nueva notificacion
-    public notificacionesmodel crearNotificacion(notificacionesmodel notificacion) {
-        return notificacionesRepository.save(notificacion);
-    }
-
-    // Listar todas las notificaciones
     public List<notificacionesmodel> listarNotificaciones() {
-        return notificacionesRepository.findAll();
+        return notificacionesRepo.findAll();
     }
 
-    // Buscar por ID
-    public Optional<notificacionesmodel> buscarPorId(Long id) {
-        return notificacionesRepository.findById(id);
+    public Optional<notificacionesmodel> obtenerPorId(Long id) {
+        return notificacionesRepo.findById(id);
     }
 
-    // Actualizar notificacion existente
-    public notificacionesmodel actualizarNotificacion(Long id, notificacionesmodel notificacion) {
-        if (!notificacionesRepository.existsById(id)) {
-            throw new IllegalArgumentException("La notificacion con ID " + id + " no existe.");
+    public notificacionesmodel actualizarNotificacion(Long id, notificacionesmodel notif) {
+        if (!notificacionesRepo.existsById(id)) {
+            throw new IllegalArgumentException("No existe ID " + id);
         }
-        notificacion.setId(id);
-        return notificacionesRepository.save(notificacion);
+        notif.setId(id);
+        return notificacionesRepo.save(notif);
     }
 
-    // Eliminar notificacion por ID
     public void eliminarNotificacion(Long id) {
-        if (!notificacionesRepository.existsById(id)) {
-            throw new IllegalArgumentException("La notificacion con ID " + id + " no existe.");
+        if (!notificacionesRepo.existsById(id)) {
+            throw new IllegalArgumentException("No existe ID " + id);
         }
-        notificacionesRepository.deleteById(id);
+        notificacionesRepo.deleteById(id);
     }
 
-    // Filtrar por usuario
-    public List<notificacionesmodel> buscarPorUsuarioId(Long usuarioId) {
-        return notificacionesRepository.findByUsuarioId(usuarioId);
+    public List<notificacionesmodel> buscarPorUsuario(Long usuarioId) {
+        return notificacionesRepo.findByUsuarioId(usuarioId);
     }
 
-    // Filtrar por estado
     public List<notificacionesmodel> buscarPorEstado(String estado) {
-        return notificacionesRepository.findByEstadoIgnoreCase(estado);
+        return notificacionesRepo.findByEstadoIgnoreCase(estado);
     }
 
-    // Filtrar por usuario + estado
     public List<notificacionesmodel> buscarPorUsuarioYEstado(Long usuarioId, String estado) {
-        return notificacionesRepository.findByUsuarioIdAndEstadoIgnoreCase(usuarioId, estado);
+        return notificacionesRepo.findByUsuarioIdAndEstadoIgnoreCase(usuarioId, estado);
     }
 }

@@ -4,113 +4,94 @@ import com.fitlife.notificaciones.model.notificacionesmodel;
 import com.fitlife.notificaciones.service.notificacionesservice;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/notificaciones")
 public class notificacionescontroller {
 
     @Autowired
-    private final notificacionesservice notificacionesService;
+    private notificacionesservice notificacionesService;
 
-    public notificacionescontroller(notificacionesservice notificacionesService) {
-        this.notificacionesService = notificacionesService;
-    }
-
-    // POST - Crear notificacion
     @PostMapping
-    public ResponseEntity<?> crearNotificacion(@Valid @RequestBody notificacionesmodel notificacion, BindingResult result) {
+    public ResponseEntity<?> crearNotificacion(@Valid @RequestBody notificacionesmodel notif, BindingResult result) {
         if (result.hasErrors()) {
             Map<String, String> errores = new HashMap<>();
-            result.getFieldErrors().forEach(error ->
-                    errores.put(error.getField(), error.getDefaultMessage()));
+            result.getFieldErrors().forEach(err -> errores.put(err.getField(), err.getDefaultMessage()));
             return ResponseEntity.badRequest().body(errores);
         }
-        notificacionesmodel creada = notificacionesService.crearNotificacion(notificacion);
-        return ResponseEntity.ok(creada);
+        if (notif.getId() != null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "No envíes ID al crear"));
+        }
+        return ResponseEntity.ok(notificacionesService.crearNotificacion(notif));
     }
 
-    // Listar todas
     @GetMapping
-    public List<notificacionesmodel> listarNotificaciones() {
-        return notificacionesService.listarNotificaciones();
+    public CollectionModel<EntityModel<notificacionesmodel>> listarNotificaciones() {
+        List<EntityModel<notificacionesmodel>> lista = notificacionesService.listarNotificaciones().stream()
+                .map(notif -> EntityModel.of(notif,
+                        WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(notificacionescontroller.class)
+                                .obtenerNotificacion(notif.getId())).withSelfRel()))
+                .collect(Collectors.toList());
+        return CollectionModel.of(lista,
+                WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(notificacionescontroller.class)
+                        .listarNotificaciones()).withSelfRel());
     }
 
-    // Buscar por ID
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
-        Optional<notificacionesmodel> notificacion = notificacionesService.buscarPorId(id);
-        if (notificacion.isPresent()) {
-            return ResponseEntity.ok(notificacion.get());
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Notificación no encontrada"));
+    public ResponseEntity<?> obtenerNotificacion(@PathVariable Long id) {
+        Optional<notificacionesmodel> notif = notificacionesService.obtenerPorId(id);
+        if (notif.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "No encontrada"));
         }
+        EntityModel<notificacionesmodel> resource = EntityModel.of(notif.get(),
+                WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(notificacionescontroller.class)
+                        .obtenerNotificacion(id)).withSelfRel());
+        return ResponseEntity.ok(resource);
     }
 
-    // Actualizar notificacion
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarNotificacion(@PathVariable Long id,
-                                                    @Valid @RequestBody notificacionesmodel notificacion,
-                                                    BindingResult result) {
+    public ResponseEntity<?> actualizarNotificacion(
+            @PathVariable Long id,
+            @Valid @RequestBody notificacionesmodel notif,
+            BindingResult result) {
         if (result.hasErrors()) {
             Map<String, String> errores = new HashMap<>();
-            result.getFieldErrors().forEach(error ->
-                    errores.put(error.getField(), error.getDefaultMessage()));
+            result.getFieldErrors().forEach(err -> errores.put(err.getField(), err.getDefaultMessage()));
             return ResponseEntity.badRequest().body(errores);
         }
-        return ResponseEntity.ok(notificacionesService.actualizarNotificacion(id, notificacion));
+        return ResponseEntity.ok(notificacionesService.actualizarNotificacion(id, notif));
     }
 
-    // Eliminar notificacion
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminarNotificacion(@PathVariable Long id) {
         notificacionesService.eliminarNotificacion(id);
         return ResponseEntity.noContent().build();
     }
 
-    // Filtrar por usuario
     @GetMapping("/usuario/{usuarioId}")
-    public List<notificacionesmodel> buscarPorUsuarioId(@PathVariable Long usuarioId) {
-        return notificacionesService.buscarPorUsuarioId(usuarioId);
+    public List<notificacionesmodel> getByUsuario(@PathVariable Long usuarioId) {
+        return notificacionesService.buscarPorUsuario(usuarioId);
     }
 
-    // Filtrar por estado
     @GetMapping("/estado")
-    public List<notificacionesmodel> buscarPorEstado(@RequestParam String estado) {
+    public List<notificacionesmodel> getByEstado(@RequestParam String estado) {
         return notificacionesService.buscarPorEstado(estado);
     }
 
-    // Filtrar por usuario + estado
-    @GetMapping("/usuarioEstado")
-    public List<notificacionesmodel> buscarPorUsuarioYEstado(@RequestParam Long usuarioId,
-                                                             @RequestParam String estado) {
+    @GetMapping("/usuario/{usuarioId}/estado")
+    public List<notificacionesmodel> getByUsuarioAndEstado(
+            @PathVariable Long usuarioId,
+            @RequestParam String estado) {
         return notificacionesService.buscarPorUsuarioYEstado(usuarioId, estado);
     }
 
-    // Manejador de JSON mal formado
-    @ExceptionHandler({HttpMessageNotReadableException.class})
-    public ResponseEntity<?> manejarErroresJson(Exception ex) {
-        return ResponseEntity.badRequest().body(Map.of(
-                "error", "Los datos enviados no tienen el formato correcto o están mal formateados."
-        ));
-    }
 }
