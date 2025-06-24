@@ -2,8 +2,7 @@ package com.fitlife.reserva.controller;
 
 import com.fitlife.reserva.model.reserva;
 import com.fitlife.reserva.service.reservaservice;
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
@@ -12,79 +11,86 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
 @RequestMapping("/api/reservas")
+@RequiredArgsConstructor
 public class reservacontroller {
 
-    @Autowired
-    private reservaservice reservaservice;
+    private final reservaservice reservaservice;
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<EntityModel<reserva>> createReserva(@Valid @RequestBody reserva reserva, Authentication auth) {
-        if(auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CLIENTE"))){
-            reserva.setClienteNombre(auth.getName());
+    public ResponseEntity<?> createReserva(@RequestBody reserva reserva) {
+        try {
+            reserva saved = reservaservice.saveReserva(reserva);
+            EntityModel<reserva> resource = EntityModel.of(saved,
+                    linkTo(methodOn(reservacontroller.class).getReservaById(saved.getId())).withSelfRel(),
+                    linkTo(methodOn(reservacontroller.class).getAllReservas()).withRel("all-reservas"));
+            return ResponseEntity.ok(resource);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ex.getMessage());
         }
-        reserva saved = reservaservice.saveReserva(reserva);
-        EntityModel<reserva> resource = toModel(saved);
-        return ResponseEntity.ok(resource);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public CollectionModel<EntityModel<reserva>> getAllReservas(Authentication auth) {
-        List<reserva> lista;
-
-        if(auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CLIENTE"))){
-            lista = reservaservice.getReservasByClienteNombre(auth.getName());
-        } else {
-            lista = reservaservice.getAllReservas();
-        }
-
-        List<EntityModel<reserva>> reservas = lista.stream()
-                .map(this::toModel)
+    public ResponseEntity<CollectionModel<EntityModel<reserva>>> getAllReservas() {
+        List<EntityModel<reserva>> reservas = reservaservice.getAllReservas().stream()
+                .map(r -> EntityModel.of(r,
+                        linkTo(methodOn(reservacontroller.class).getReservaById(r.getId())).withSelfRel()))
                 .collect(Collectors.toList());
-
-        return CollectionModel.of(reservas,
-                linkTo(methodOn(reservacontroller.class).getAllReservas(auth)).withSelfRel());
+        return ResponseEntity.ok(CollectionModel.of(reservas,
+                linkTo(methodOn(reservacontroller.class).getAllReservas()).withSelfRel()));
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
-    public ResponseEntity<EntityModel<reserva>> getReservaById(@PathVariable Long id, Authentication auth) {
-        return reservaservice.getReservaById(id)
-                .filter(res -> {
-                    if(auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CLIENTE"))){
-                        return res.getClienteNombre().equals(auth.getName());
-                    }
-                    return true;
-                })
-                .map(res -> ResponseEntity.ok(toModel(res)))
-                .orElse(ResponseEntity.status(403).build());
+    public ResponseEntity<?> getReservaById(@PathVariable Long id) {
+        Optional<reserva> r = reservaservice.getReservaById(id);
+        return r.map(value -> ResponseEntity.ok(
+                        EntityModel.of(value,
+                                linkTo(methodOn(reservacontroller.class).getReservaById(id)).withSelfRel(),
+                                linkTo(methodOn(reservacontroller.class).getAllReservas()).withRel("all-reservas"))
+                ))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<reserva> updateReserva(@PathVariable Long id, @Valid @RequestBody reserva reserva) {
+    public ResponseEntity<?> updateReserva(@PathVariable Long id, @RequestBody reserva reserva) {
         reserva updated = reservaservice.updateReserva(id, reserva);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
+        if (updated != null) {
+            EntityModel<reserva> resource = EntityModel.of(updated,
+                    linkTo(methodOn(reservacontroller.class).getReservaById(updated.getId())).withSelfRel(),
+                    linkTo(methodOn(reservacontroller.class).getAllReservas()).withRel("all-reservas"));
+            return ResponseEntity.ok(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteReserva(@PathVariable Long id) {
-        boolean deleted = reservaservice.deleteReserva(id);
-        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+        if (reservaservice.deleteReserva(id)) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 
-    // Método privado para crear EntityModel sin pasar Authentication (evita error HATEOAS)
-    private EntityModel<reserva> toModel(reserva res) {
-        return EntityModel.of(res,
-                linkTo(methodOn(reservacontroller.class).getReservaById(res.getId(), null)).withSelfRel(),
-                linkTo(methodOn(reservacontroller.class).getAllReservas(null)).withRel("all-reservas"));
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/cliente/{nombre}")
+    public ResponseEntity<CollectionModel<EntityModel<reserva>>> getReservasByClienteNombre(@PathVariable String nombre) {
+        List<EntityModel<reserva>> reservas = reservaservice.getReservasByClienteNombre(nombre).stream()
+                .map(r -> EntityModel.of(r,
+                        linkTo(methodOn(reservacontroller.class).getReservaById(r.getId())).withSelfRel()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(CollectionModel.of(reservas,
+                linkTo(methodOn(reservacontroller.class).getAllReservas()).withSelfRel()));
     }
 }

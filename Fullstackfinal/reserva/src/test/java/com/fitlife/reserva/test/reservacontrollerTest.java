@@ -2,23 +2,27 @@ package com.fitlife.reserva.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fitlife.reserva.controller.reservacontroller;
-import com.fitlife.reserva.model.reservamodel;
+import com.fitlife.reserva.model.reserva;
 import com.fitlife.reserva.service.reservaservice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -37,41 +41,65 @@ public class reservacontrollerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private reservamodel reserva;
+    private reserva reservaTest;
 
     @BeforeEach
     void setup() {
-        reserva = new reservamodel(1L, 1L, 2L, LocalDate.now().plusDays(1), LocalTime.of(10, 0));
+        reservaTest = reserva.builder()
+                .id(1L)
+                .clienteNombre("Juan Pérez")
+                .fecha(LocalDate.now().plusDays(1))
+                .hora(LocalTime.of(10, 0))
+                .estado("Activa")
+                .build();
+
+        // Contexto de autenticación manual para simular ADMIN real
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "adminsupremo",
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                )
+        );
     }
 
     @Test
     void testCrearReserva_OK() throws Exception {
-        when(reservaservice.save(any(reservamodel.class))).thenReturn(reserva);
+        when(reservaservice.saveReserva(any(reserva.class))).thenReturn(reservaTest);
 
         mockMvc.perform(post("/api/reservas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(reserva)))
+                        .content(objectMapper.writeValueAsString(reservaTest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.usuarioId").value(1))
-                .andExpect(jsonPath("$.claseId").value(2))
+                .andExpect(jsonPath("$.clienteNombre").value("Juan Pérez"))
                 .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
     void testCrearReserva_Duplicada() throws Exception {
-        when(reservaservice.save(any(reservamodel.class)))
+        when(reservaservice.saveReserva(any(reserva.class)))
                 .thenThrow(new IllegalArgumentException("Ya tienes una reserva en ese horario."));
 
         mockMvc.perform(post("/api/reservas")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(reserva)))
+                        .content(objectMapper.writeValueAsString(reservaTest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Ya tienes una reserva en ese horario."));
     }
 
     @Test
-    void testObtenerReservaPorId_OK() throws Exception {
-        when(reservaservice.getById(1L)).thenReturn(reserva);
+    void testGetAllReservas() throws Exception {
+        when(reservaservice.getAllReservas()).thenReturn(List.of(reservaTest));
+
+        mockMvc.perform(get("/api/reservas"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.reservaList[0].clienteNombre").value("Juan Pérez"))
+                .andExpect(jsonPath("$._embedded.reservaList[0]._links.self.href").exists());
+    }
+
+    @Test
+    void testGetReservaById_OK() throws Exception {
+        when(reservaservice.getReservaById(1L)).thenReturn(Optional.of(reservaTest));
 
         mockMvc.perform(get("/api/reservas/1"))
                 .andExpect(status().isOk())
@@ -80,72 +108,48 @@ public class reservacontrollerTest {
     }
 
     @Test
-    void testObtenerReservaPorId_NoExiste() throws Exception {
-        when(reservaservice.getById(99L)).thenReturn(null);
+    void testGetReservaById_NoExiste() throws Exception {
+        when(reservaservice.getReservaById(99L)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/reservas/99"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void testActualizarReserva_OK() throws Exception {
-        when(reservaservice.update(eq(1L), any(reservamodel.class))).thenReturn(reserva);
+    void testUpdateReserva_OK() throws Exception {
+        when(reservaservice.updateReserva(eq(1L), any(reserva.class))).thenReturn(reservaTest);
 
         mockMvc.perform(put("/api/reservas/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(reserva)))
+                        .content(objectMapper.writeValueAsString(reservaTest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.usuarioId").value(1))
+                .andExpect(jsonPath("$.clienteNombre").value("Juan Pérez"))
                 .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
-    void testEliminarReserva_OK() throws Exception {
-        when(reservaservice.delete(1L)).thenReturn(true);
+    void testDeleteReserva_OK() throws Exception {
+        when(reservaservice.deleteReserva(1L)).thenReturn(true);
 
         mockMvc.perform(delete("/api/reservas/1"))
                 .andExpect(status().isNoContent());
     }
 
     @Test
-    void testEliminarReserva_NoExiste() throws Exception {
-        when(reservaservice.delete(1L)).thenReturn(false);
+    void testDeleteReserva_NoExiste() throws Exception {
+        when(reservaservice.deleteReserva(1L)).thenReturn(false);
 
         mockMvc.perform(delete("/api/reservas/1"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void testBuscarReservasPorUsuario() throws Exception {
-        when(reservaservice.getByUsuarioId(1L)).thenReturn(List.of(reserva));
+    void testGetReservasByClienteNombre() throws Exception {
+        when(reservaservice.getReservasByClienteNombre("Juan Pérez")).thenReturn(List.of(reservaTest));
 
-        mockMvc.perform(get("/api/reservas/usuario/1"))
+        mockMvc.perform(get("/api/reservas/cliente/Juan Pérez"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.reservamodelList[0].usuarioId").value(1))
-                .andExpect(jsonPath("$._embedded.reservamodelList[0]._links.self.href").exists());
-    }
-
-    @Test
-    void testBuscarReservasPorFecha() throws Exception {
-        String fecha = LocalDate.now().plusDays(1).toString();
-        when(reservaservice.getByFecha(any())).thenReturn(List.of(reserva));
-
-        mockMvc.perform(get("/api/reservas/fecha")
-                        .param("fecha", fecha))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.reservamodelList[0].fecha").value(fecha));
-    }
-
-    @Test
-    void testBuscarReservasPorRango() throws Exception {
-        String desde = LocalDate.now().toString();
-        String hasta = LocalDate.now().plusDays(5).toString();
-        when(reservaservice.getByFechaBetween(any(), any())).thenReturn(List.of(reserva));
-
-        mockMvc.perform(get("/api/reservas/rango")
-                        .param("desde", desde)
-                        .param("hasta", hasta))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.reservamodelList[0].usuarioId").value(1));
+                .andExpect(jsonPath("$._embedded.reservaList[0].clienteNombre").value("Juan Pérez"))
+                .andExpect(jsonPath("$._embedded.reservaList[0]._links.self.href").exists());
     }
 }

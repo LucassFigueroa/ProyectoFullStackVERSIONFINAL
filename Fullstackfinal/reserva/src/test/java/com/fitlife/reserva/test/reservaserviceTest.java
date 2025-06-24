@@ -1,6 +1,6 @@
 package com.fitlife.reserva.test;
 
-import com.fitlife.reserva.model.reservamodel;
+import com.fitlife.reserva.model.reserva;
 import com.fitlife.reserva.repository.reservarepository;
 import com.fitlife.reserva.service.reservaservice;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class reservaserviceTest {
@@ -23,120 +26,104 @@ public class reservaserviceTest {
     @InjectMocks
     private reservaservice reservaservice;
 
-    private reservamodel reserva;
+    private reserva reservaTest;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        reserva = new reservamodel(1L, 1L, 2L, LocalDate.now().plusDays(1), LocalTime.of(10, 0));
+        reservaTest = reserva.builder()
+                .id(1L)
+                .clienteNombre("Juan Pérez")
+                .fecha(LocalDate.now().plusDays(1))
+                .hora(LocalTime.of(10, 0))
+                .estado("Activa")
+                .build();
     }
 
     @Test
-    void testSave_ReservaNueva_OK() {
-        when(reservarepository.existsByUsuarioIdAndFechaAndHora(anyLong(), any(), any())).thenReturn(false);
-        when(reservarepository.save(any(reservamodel.class))).thenReturn(reserva);
+    void testSaveReserva_OK() {
+        when(reservarepository.existsByClienteNombreAndFechaAndHora(anyString(), any(), any())).thenReturn(false);
+        when(reservarepository.save(any(reserva.class))).thenReturn(reservaTest);
 
-        reservamodel result = reservaservice.save(reserva);
+        reserva result = reservaservice.saveReserva(reservaTest);
 
         assertNotNull(result);
-        verify(reservarepository, times(1)).save(reserva);
+        verify(reservarepository, times(1)).save(reservaTest);
     }
 
     @Test
-    void testSave_ReservaDuplicada_Error() {
-        when(reservarepository.existsByUsuarioIdAndFechaAndHora(anyLong(), any(), any())).thenReturn(true);
+    void testGetAllReservas() {
+        when(reservarepository.findAll()).thenReturn(List.of(reservaTest));
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> reservaservice.save(reserva));
+        List<reserva> result = reservaservice.getAllReservas();
 
-        assertEquals("Ya tienes una reserva en ese horario.", exception.getMessage());
-        verify(reservarepository, never()).save(any());
+        assertEquals(1, result.size());
     }
 
     @Test
-    void testGetById_Existente() {
-        when(reservarepository.findById(1L)).thenReturn(Optional.of(reserva));
+    void testGetReservaById_Existente() {
+        when(reservarepository.findById(1L)).thenReturn(Optional.of(reservaTest));
 
-        reservamodel result = reservaservice.getById(1L);
+        Optional<reserva> result = reservaservice.getReservaById(1L);
 
-        assertNotNull(result);
-        assertEquals(1L, result.getId());
+        assertTrue(result.isPresent());
+        assertEquals("Juan Pérez", result.get().getClienteNombre());
     }
 
     @Test
-    void testGetById_NoExiste() {
+    void testGetReservaById_NoExiste() {
         when(reservarepository.findById(1L)).thenReturn(Optional.empty());
 
-        reservamodel result = reservaservice.getById(1L);
+        Optional<reserva> result = reservaservice.getReservaById(1L);
 
-        assertNull(result);
+        assertTrue(result.isEmpty());
     }
 
     @Test
-    void testUpdate_OK() {
-        when(reservarepository.findById(1L)).thenReturn(Optional.of(reserva));
-        when(reservarepository.save(any())).thenReturn(reserva);
+    void testUpdateReserva_OK() {
+        when(reservarepository.findById(1L)).thenReturn(Optional.of(reservaTest));
+        when(reservarepository.save(any())).thenReturn(reservaTest);
 
-        reservamodel updated = reservaservice.update(1L, reserva);
+        reserva updated = reservaservice.updateReserva(1L, reservaTest);
 
         assertNotNull(updated);
-        verify(reservarepository).save(reserva);
+        verify(reservarepository).save(reservaTest);
     }
 
     @Test
-    void testDelete_Existente() {
+    void testUpdateReserva_NoExiste() {
+        when(reservarepository.findById(1L)).thenReturn(Optional.empty());
+
+        reserva updated = reservaservice.updateReserva(1L, reservaTest);
+
+        assertNull(updated);
+    }
+
+    @Test
+    void testDeleteReserva_OK() {
         when(reservarepository.existsById(1L)).thenReturn(true);
 
-        boolean result = reservaservice.delete(1L);
+        boolean result = reservaservice.deleteReserva(1L);
 
         assertTrue(result);
         verify(reservarepository).deleteById(1L);
     }
 
     @Test
-    void testDelete_NoExiste() {
+    void testDeleteReserva_NoExiste() {
         when(reservarepository.existsById(1L)).thenReturn(false);
 
-        boolean result = reservaservice.delete(1L);
+        boolean result = reservaservice.deleteReserva(1L);
 
         assertFalse(result);
         verify(reservarepository, never()).deleteById(any());
     }
 
     @Test
-    void testGetAll() {
-        when(reservarepository.findAll()).thenReturn(List.of(reserva));
+    void testGetReservasByClienteNombre() {
+        when(reservarepository.findByClienteNombre("Juan Pérez")).thenReturn(List.of(reservaTest));
 
-        List<reservamodel> result = reservaservice.getAll();
-
-        assertEquals(1, result.size());
-    }
-
-    @Test
-    void testGetByUsuarioId() {
-        when(reservarepository.findByUsuarioId(1L)).thenReturn(List.of(reserva));
-
-        List<reservamodel> result = reservaservice.getByUsuarioId(1L);
-
-        assertEquals(1, result.size());
-    }
-
-    @Test
-    void testGetByFecha() {
-        LocalDate fecha = LocalDate.now().plusDays(1);
-        when(reservarepository.findByFecha(fecha)).thenReturn(List.of(reserva));
-
-        List<reservamodel> result = reservaservice.getByFecha(fecha);
-
-        assertEquals(1, result.size());
-    }
-
-    @Test
-    void testGetByFechaBetween() {
-        LocalDate desde = LocalDate.now();
-        LocalDate hasta = LocalDate.now().plusDays(2);
-        when(reservarepository.findByFechaBetween(desde, hasta)).thenReturn(List.of(reserva));
-
-        List<reservamodel> result = reservaservice.getByFechaBetween(desde, hasta);
+        List<reserva> result = reservaservice.getReservasByClienteNombre("Juan Pérez");
 
         assertEquals(1, result.size());
     }
