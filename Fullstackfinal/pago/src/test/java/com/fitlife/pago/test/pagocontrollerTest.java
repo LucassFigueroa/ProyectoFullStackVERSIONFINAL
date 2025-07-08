@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fitlife.pago.controller.pagocontroller;
 import com.fitlife.pago.model.pagomodel;
 import com.fitlife.pago.service.pagoservice;
-import com.fitlife.pago.config.securityconfig; // importa tu clase real aquí
+import com.fitlife.pago.config.securityconfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -15,6 +15,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -24,7 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(pagocontroller.class)
-@Import(securityconfig.class) // 🔥 Esto activa tu configuración real de seguridad
+@Import(securityconfig.class)
 public class pagocontrollerTest {
 
     @Autowired
@@ -91,5 +92,62 @@ public class pagocontrollerTest {
 
         mockMvc.perform(delete("/pago/1"))
                 .andExpect(status().isNoContent());
+    }
+
+    @WithMockUser(roles = "STAFF")
+    @Test
+    public void testBuscarPorEstado() throws Exception {
+        pagomodel pago = crearPagoMock();
+        when(pagoservice.buscarPorEstado("Pagado")).thenReturn(List.of(pago));
+
+        mockMvc.perform(get("/pago/buscarEstado")
+                .param("estado", "Pagado"))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(roles = "STAFF")
+    @Test
+    public void testBuscarPorMetodo() throws Exception {
+        pagomodel pago = crearPagoMock();
+        when(pagoservice.buscarPorMetodo("Transferencia")).thenReturn(List.of(pago));
+
+        mockMvc.perform(get("/pago/buscarMetodo")
+                .param("metodo", "Transferencia"))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(roles = "STAFF")
+    @Test
+    public void testBuscarPorRangoFecha() throws Exception {
+        pagomodel pago = crearPagoMock();
+        when(pagoservice.buscarPorRangoFecha(LocalDate.of(2025, 7, 1), LocalDate.of(2025, 7, 10)))
+                .thenReturn(List.of(pago));
+
+        mockMvc.perform(get("/pago/buscarRangoFecha")
+                .param("desde", "2025-07-01")
+                .param("hasta", "2025-07-10"))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(roles = "STAFF")
+    @Test
+    public void testBuscarPorMontoMayor() throws Exception {
+        pagomodel pago = crearPagoMock();
+        when(pagoservice.buscarPorMontoMayor(10000)).thenReturn(List.of(pago));
+
+        mockMvc.perform(get("/pago/buscarMontoMayor")
+                .param("monto", "10000"))
+                .andExpect(status().isOk());
+    }
+
+    @WithMockUser(roles = "STAFF")
+    @Test
+    public void testBuscarPorMontoMenor() throws Exception {
+        pagomodel pago = crearPagoMock();
+        when(pagoservice.buscarPorMontoMenor(20000)).thenReturn(List.of(pago));
+
+        mockMvc.perform(get("/pago/buscarMontoMenor")
+                .param("monto", "20000"))
+                .andExpect(status().isOk());
     }
 }
