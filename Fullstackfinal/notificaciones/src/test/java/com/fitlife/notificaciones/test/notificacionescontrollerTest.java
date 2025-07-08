@@ -52,6 +52,13 @@ public class notificacionescontrollerTest {
 
     @Test
     void crearNotificacion_deberiaRetornarOk() throws Exception {
+        notificacionesmodel notif = notificacionesmodel.builder()
+                .usuarioId(1L)
+                .mensaje("Prueba de mensaje")
+                .fechaEnvio(LocalDateTime.now())
+                .estado("No Leida")
+                .build();
+
         when(notificacionesService.crearNotificacion(any(notificacionesmodel.class))).thenReturn(notif);
 
         mockMvc.perform(post("/notificaciones")
