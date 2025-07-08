@@ -2,9 +2,14 @@ package com.fitlife.clase.controller;
 
 import com.fitlife.clase.model.clase;
 import com.fitlife.clase.service.claseservice;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,25 +20,32 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
 @RequestMapping("/api/clases")
+@Tag(name = "Controlador de Clases", description = "Operaciones relacionadas con las clases de FitLife SPA")
 public class clasecontroller {
 
     @Autowired
     private claseservice claseservice;
 
-    // ✅ Crear clase: solo ADMIN o STAFF
+    @Operation(summary = "Crear una nueva clase")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Clase creada exitosamente")
+    })
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @PostMapping
-    public EntityModel<clase> guardarClase(@RequestBody clase clase) {
+    public ResponseEntity<EntityModel<clase>> guardarClase(@RequestBody clase clase) {
         clase creada = claseservice.guardarClase(clase);
-        return EntityModel.of(creada,
-                linkTo(methodOn(clasecontroller.class).guardarClase(clase)).withSelfRel(),
-                linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withRel("todas-las-clases"));
+        return ResponseEntity
+                .status(201)
+                .body(EntityModel.of(creada,
+                        linkTo(methodOn(clasecontroller.class).obtenerClasePorId(creada.getId())).withSelfRel(),
+                        linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withRel("todas-las-clases")));
     }
 
-    // ✅ Ver todas: todos los roles
+    @Operation(summary = "Obtener todas las clases")
+    @ApiResponse(responseCode = "200", description = "Clases encontradas")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
     @GetMapping
-    public CollectionModel<EntityModel<clase>> obtenerTodasLasClases() {
+    public ResponseEntity<CollectionModel<EntityModel<clase>>> obtenerTodasLasClases() {
         List<EntityModel<clase>> clases = claseservice.obtenerTodasLasClases().stream()
                 .map(c -> EntityModel.of(c,
                         linkTo(methodOn(clasecontroller.class).obtenerClasePorId(c.getId())).withSelfRel(),
@@ -41,33 +53,41 @@ public class clasecontroller {
                 ))
                 .collect(Collectors.toList());
 
-        return CollectionModel.of(clases, linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withSelfRel());
+        return ResponseEntity.ok(CollectionModel.of(clases,
+                linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withSelfRel()));
     }
 
-    // ✅ Ver una: todos los roles
+    @Operation(summary = "Obtener una clase por su ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Clase encontrada"),
+        @ApiResponse(responseCode = "404", description = "Clase no encontrada")
+    })
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'CLIENTE')")
     @GetMapping("/{id}")
-    public EntityModel<clase> obtenerClasePorId(@PathVariable Long id) {
+    public ResponseEntity<EntityModel<clase>> obtenerClasePorId(@PathVariable Long id) {
         clase encontrada = claseservice.obtenerClasePorId(id)
                 .orElseThrow(() -> new RuntimeException("Clase no encontrada"));
-        return EntityModel.of(encontrada,
+        return ResponseEntity.ok(EntityModel.of(encontrada,
                 linkTo(methodOn(clasecontroller.class).obtenerClasePorId(id)).withSelfRel(),
-                linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withRel("todas-las-clases"));
+                linkTo(methodOn(clasecontroller.class).obtenerTodasLasClases()).withRel("todas-las-clases")));
     }
 
-    // ✅ Actualizar: ADMIN o STAFF
+    @Operation(summary = "Actualizar una clase por su ID")
+    @ApiResponse(responseCode = "200", description = "Clase actualizada exitosamente")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @PutMapping("/{id}")
-    public EntityModel<clase> actualizarClase(@PathVariable Long id, @RequestBody clase claseDetails) {
+    public ResponseEntity<EntityModel<clase>> actualizarClase(@PathVariable Long id, @RequestBody clase claseDetails) {
         clase actualizada = claseservice.actualizarClase(id, claseDetails);
-        return EntityModel.of(actualizada,
-                linkTo(methodOn(clasecontroller.class).obtenerClasePorId(id)).withSelfRel());
+        return ResponseEntity.ok(EntityModel.of(actualizada,
+                linkTo(methodOn(clasecontroller.class).obtenerClasePorId(id)).withSelfRel()));
     }
 
-    // ✅ Eliminar: solo ADMIN
+    @Operation(summary = "Eliminar una clase por su ID")
+    @ApiResponse(responseCode = "204", description = "Clase eliminada exitosamente")
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public void eliminarClase(@PathVariable Long id) {
+    public ResponseEntity<Void> eliminarClase(@PathVariable Long id) {
         claseservice.eliminarClase(id);
+        return ResponseEntity.noContent().build();
     }
 }
