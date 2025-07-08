@@ -2,6 +2,10 @@ package com.fitlife.inventario.controller;
 
 import com.fitlife.inventario.model.inventariomodel;
 import com.fitlife.inventario.service.inventarioservice;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -19,11 +23,17 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/inventario")
+@Tag(name = "Controlador de Inventario", description = "Operaciones CRUD y búsquedas avanzadas para artículos del inventario de FitLife SPA")
 public class inventariocontroller {
 
     @Autowired
     private inventarioservice inventarioService;
 
+    @Operation(summary = "Crear un nuevo artículo de inventario")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Artículo creado correctamente"),
+        @ApiResponse(responseCode = "400", description = "Datos inválidos")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<?> crearInventario(@Valid @RequestBody inventariomodel inventario, BindingResult result) {
@@ -43,6 +53,10 @@ public class inventariocontroller {
         return ResponseEntity.ok(recurso);
     }
 
+    @Operation(summary = "Listar todos los artículos de inventario")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente")
+    })
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
     @GetMapping
     public ResponseEntity<CollectionModel<EntityModel<inventariomodel>>> listarInventarios() {
@@ -59,6 +73,12 @@ public class inventariocontroller {
         ));
     }
 
+    @Operation(summary = "Obtener un artículo de inventario por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Artículo encontrado"),
+        @ApiResponse(responseCode = "400", description = "ID inválido"),
+        @ApiResponse(responseCode = "404", description = "Artículo no encontrado")
+    })
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<?> obtenerInventario(@PathVariable String id) {
@@ -78,6 +98,11 @@ public class inventariocontroller {
         }
     }
 
+    @Operation(summary = "Actualizar un artículo de inventario")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Artículo actualizado correctamente"),
+        @ApiResponse(responseCode = "400", description = "Datos inválidos")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizarInventario(
@@ -100,6 +125,10 @@ public class inventariocontroller {
         return ResponseEntity.ok(recurso);
     }
 
+    @Operation(summary = "Eliminar un artículo de inventario")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Artículo eliminado correctamente")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminarInventario(@PathVariable Long id) {
@@ -107,18 +136,24 @@ public class inventariocontroller {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Buscar por nombre de artículo")
+    @ApiResponse(responseCode = "200", description = "Búsqueda completada")
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
     @GetMapping("/buscarNombre")
     public List<inventariomodel> buscarPorNombre(@RequestParam String nombre) {
         return inventarioService.buscarPorNombre(nombre);
     }
 
+    @Operation(summary = "Buscar por estado")
+    @ApiResponse(responseCode = "200", description = "Búsqueda completada")
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
     @GetMapping("/buscarEstado")
     public List<inventariomodel> buscarPorEstado(@RequestParam String estado) {
         return inventarioService.buscarPorEstado(estado);
     }
 
+    @Operation(summary = "Buscar por fecha exacta de ingreso")
+    @ApiResponse(responseCode = "200", description = "Búsqueda completada")
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
     @GetMapping("/buscarFecha")
     public List<inventariomodel> buscarPorFecha(@RequestParam String fecha) {
@@ -126,6 +161,8 @@ public class inventariocontroller {
         return inventarioService.buscarPorFecha(date);
     }
 
+    @Operation(summary = "Buscar por rango de fechas")
+    @ApiResponse(responseCode = "200", description = "Búsqueda completada")
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
     @GetMapping("/buscarRango")
     public List<inventariomodel> buscarPorRangoFecha(@RequestParam String desde, @RequestParam String hasta) {
@@ -134,12 +171,19 @@ public class inventariocontroller {
         return inventarioService.buscarPorRangoFecha(d1, d2);
     }
 
+    @Operation(summary = "Buscar por nombre y estado")
+    @ApiResponse(responseCode = "200", description = "Búsqueda completada")
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
     @GetMapping("/buscarAvanzado")
     public List<inventariomodel> buscarPorNombreYEstado(@RequestParam String nombre, @RequestParam String estado) {
         return inventarioService.buscarPorNombreYEstado(nombre, estado);
     }
 
+    @Operation(summary = "Buscar por número de serie exacto")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Artículo encontrado"),
+        @ApiResponse(responseCode = "404", description = "No encontrado")
+    })
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
     @GetMapping("/buscarSerieExacta")
     public ResponseEntity<?> buscarPorNumeroSerie(@RequestParam String serie) {
@@ -150,6 +194,8 @@ public class inventariocontroller {
         return ResponseEntity.ok(encontrado);
     }
 
+    @Operation(summary = "Buscar por coincidencia parcial del número de serie")
+    @ApiResponse(responseCode = "200", description = "Búsqueda completada")
     @PreAuthorize("hasAnyRole('STAFF','ADMIN')")
     @GetMapping("/buscarSerieParcial")
     public List<inventariomodel> buscarPorNumeroSerieParcial(@RequestParam String serie) {
