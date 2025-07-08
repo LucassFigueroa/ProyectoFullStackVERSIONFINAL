@@ -3,6 +3,8 @@ package com.fitlife.reporte.controller;
 import com.fitlife.reporte.model.reportemodel;
 import com.fitlife.reporte.service.reporteservice;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,7 @@ public class reportecontroller {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     @Operation(summary = "Crear un nuevo reporte")
+    @ApiResponse(responseCode = "200", description = "Reporte creado exitosamente")
     public ResponseEntity<EntityModel<reportemodel>> create(@Valid @RequestBody reportemodel reporte) {
         reportemodel saved = reporteservice.save(reporte);
         return ResponseEntity.ok(toModel(saved));
@@ -39,7 +42,8 @@ public class reportecontroller {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('SOPORTE')")
     @GetMapping
-    @Operation(summary = "Obtener todos los reportes")
+    @Operation(summary = "Obtener todos los reportes (paginado opcional)")
+    @ApiResponse(responseCode = "200", description = "Listado de reportes obtenidos correctamente")
     public CollectionModel<EntityModel<reportemodel>> getAll(
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
@@ -63,7 +67,11 @@ public class reportecontroller {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('SOPORTE')")
     @GetMapping("/{id}")
-    @Operation(summary = "Obtener reporte por ID")
+    @Operation(summary = "Obtener un reporte por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Reporte encontrado"),
+        @ApiResponse(responseCode = "404", description = "Reporte no encontrado")
+    })
     public ResponseEntity<EntityModel<reportemodel>> getById(@PathVariable Long id) {
         reportemodel reporte = reporteservice.getById(id);
         return reporte != null
@@ -73,7 +81,11 @@ public class reportecontroller {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('SOPORTE')")
     @PutMapping("/{id}")
-    @Operation(summary = "Actualizar reporte por ID")
+    @Operation(summary = "Actualizar un reporte por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Reporte actualizado correctamente"),
+        @ApiResponse(responseCode = "404", description = "Reporte no encontrado")
+    })
     public ResponseEntity<EntityModel<reportemodel>> update(
             @PathVariable Long id,
             @Valid @RequestBody reportemodel details) {
@@ -86,7 +98,11 @@ public class reportecontroller {
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    @Operation(summary = "Eliminar reporte por ID")
+    @Operation(summary = "Eliminar un reporte por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Reporte eliminado correctamente"),
+        @ApiResponse(responseCode = "404", description = "Reporte no encontrado")
+    })
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         boolean deleted = reporteservice.delete(id);
         return deleted
@@ -97,6 +113,7 @@ public class reportecontroller {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SOPORTE')")
     @GetMapping("/filtro/tipo")
     @Operation(summary = "Filtrar reportes por tipo")
+    @ApiResponse(responseCode = "200", description = "Reportes filtrados por tipo obtenidos correctamente")
     public CollectionModel<EntityModel<reportemodel>> getByTipo(@RequestParam String tipo) {
         List<reportemodel> reportes = reporteservice.getByTipo(tipo);
 
@@ -111,6 +128,10 @@ public class reportecontroller {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SOPORTE')")
     @GetMapping("/filtro/fecha")
     @Operation(summary = "Filtrar reportes por rango de fechas")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Reportes filtrados por fecha obtenidos correctamente"),
+        @ApiResponse(responseCode = "400", description = "Formato de fecha inválido")
+    })
     public CollectionModel<EntityModel<reportemodel>> getByFecha(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) String desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) String hasta) {
