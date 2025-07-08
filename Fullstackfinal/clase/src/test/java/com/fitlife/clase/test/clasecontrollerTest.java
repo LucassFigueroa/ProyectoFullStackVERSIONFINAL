@@ -54,7 +54,7 @@ public class clasecontrollerTest {
         mockMvc.perform(post("/api/clases")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(clase)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nombreClase").value("Yoga"));
     }
 
@@ -87,6 +87,6 @@ public class clasecontrollerTest {
     @Test
     void testEliminarClase() throws Exception {
         mockMvc.perform(delete("/api/clases/1"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 }

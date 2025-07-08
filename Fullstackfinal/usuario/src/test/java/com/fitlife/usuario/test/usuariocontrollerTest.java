@@ -35,7 +35,6 @@ public class usuariocontrollerTest {
 
     @Test
     void testRegister() throws Exception {
-        // ✅ Usar modelo correcto para mock
         usuariomodel returnedUser = new usuariomodel();
         returnedUser.setId(1L);
         returnedUser.setNombre("AdminMaster");
@@ -53,10 +52,10 @@ public class usuariocontrollerTest {
             }
             """;
 
-        mockMvc.perform(post("/api/register")
+        mockMvc.perform(post("/usuario") // 
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nombre").value("AdminMaster"))
                 .andExpect(jsonPath("$.email").value("admin@fitlife.com"))
                 .andExpect(jsonPath("$.rol").value("ADMIN"));
@@ -80,7 +79,7 @@ public class usuariocontrollerTest {
             }
             """;
 
-        mockMvc.perform(post("/api/login")
+        mockMvc.perform(post("/usuario/login") //
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
@@ -99,10 +98,10 @@ public class usuariocontrollerTest {
             }
             """;
 
-        mockMvc.perform(post("/api/login")
+        mockMvc.perform(post("/usuario/login") // 
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Credenciales inválidas ❌"));
+                .andExpect(jsonPath("$.message").value("Credenciales inválidas"));
     }
 }
