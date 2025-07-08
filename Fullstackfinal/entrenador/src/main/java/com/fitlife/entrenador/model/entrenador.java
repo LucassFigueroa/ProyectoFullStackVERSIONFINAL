@@ -24,4 +24,6 @@ public class entrenador {
     @Column(nullable = false)
     private String experiencia; // años de experiencia
 
+    
+
 }
