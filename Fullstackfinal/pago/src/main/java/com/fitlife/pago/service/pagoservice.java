@@ -2,6 +2,7 @@ package com.fitlife.pago.service;
 
 import com.fitlife.pago.model.pagomodel;
 import com.fitlife.pago.repository.pagorepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -10,61 +11,57 @@ import java.util.List;
 @Service
 public class pagoservice {
 
-    private final pagorepository pagoRepository;
-
-    public pagoservice(pagorepository pagoRepository) {
-        this.pagoRepository = pagoRepository;
+    @Autowired
+    private pagorepository pagorepository;
+    
+    public void setRepository(pagorepository pagorepository) {
+        this.pagorepository = pagorepository;
     }
 
     public pagomodel crearPago(pagomodel pago) {
-        return pagoRepository.save(pago);
+        return pagorepository.save(pago);
     }
 
     public List<pagomodel> listarPagos() {
-        return pagoRepository.findAll();
+        return pagorepository.findAll();
     }
 
     public pagomodel obtenerPorId(Long id) {
-        return pagoRepository.findById(id).orElse(null);
+        return pagorepository.findById(id).orElse(null);
     }
 
     public pagomodel actualizarPago(Long id, pagomodel pago) {
-        if (!pagoRepository.existsById(id)) {
+        if (!pagorepository.existsById(id)) {
             throw new IllegalArgumentException("No existe el ID " + id);
         }
         pago.setId(id);
-        return pagoRepository.save(pago);
+        return pagorepository.save(pago);
     }
 
     public void eliminarPago(Long id) {
-        if (!pagoRepository.existsById(id)) {
+        if (!pagorepository.existsById(id)) {
             throw new IllegalArgumentException("No existe el ID " + id);
         }
-        pagoRepository.deleteById(id);
+        pagorepository.deleteById(id);
     }
 
-    // Buscar por estado
     public List<pagomodel> buscarPorEstado(String estado) {
-        return pagoRepository.findByEstadoIgnoreCase(estado);
+        return pagorepository.findByEstadoIgnoreCase(estado);
     }
 
-    // Buscar por rango de fecha de pago
     public List<pagomodel> buscarPorRangoFecha(LocalDate desde, LocalDate hasta) {
-        return pagoRepository.findByFechaPagoBetween(desde, hasta);
+        return pagorepository.findByFechaPagoBetween(desde, hasta);
     }
 
-    // Buscar por método de pago
-    public List<pagomodel> buscarPorMetodo(String metodo) {
-        return pagoRepository.findByMetodoPagoIgnoreCase(metodo);
+    public List<pagomodel> buscarPorMontoMayor(Integer monto) {
+        return pagorepository.findByMontoGreaterThan(monto);
     }
 
-    // Buscar por monto mayor que
-    public List<pagomodel> buscarPorMontoMayor(Double monto) {
-        return pagoRepository.findByMontoGreaterThan(monto);
+    public List<pagomodel> buscarPorMontoMenor(Integer monto) {
+        return pagorepository.findByMontoLessThan(monto);
     }
 
-    // Buscar por monto menor que
-    public List<pagomodel> buscarPorMontoMenor(Double monto) {
-        return pagoRepository.findByMontoLessThan(monto);
+    public List<pagomodel> buscarPorMetodo(String metodoPago) {
+        return pagorepository.findByMetodoPagoIgnoreCase(metodoPago);
     }
 }

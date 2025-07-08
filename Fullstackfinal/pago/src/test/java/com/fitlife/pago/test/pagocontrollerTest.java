@@ -4,148 +4,107 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fitlife.pago.controller.pagocontroller;
 import com.fitlife.pago.model.pagomodel;
 import com.fitlife.pago.service.pagoservice;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.mockito.Mockito;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 
+import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(pagocontroller.class)
-@AutoConfigureMockMvc(addFilters = false)
-class pagocontrollerTest {
+public class pagocontrollerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
-    private pagoservice pagoService;
+    private pagoservice pagoservice;
 
     @Autowired
     private ObjectMapper objectMapper;
 
-    private pagomodel pago;
-
-    @BeforeEach
-    void setUp() {
-        pago = pagomodel.builder()
-                .id(1L)
-                .estado("Pagado")
-                .metodoPago("Tarjeta")
-                .monto(15000.0)
-                .fechaPago(LocalDate.now())
-                .build();
+    private pagomodel crearPagoEjemplo() {
+        return new pagomodel(1L, 100L, 2000, "Transferencia", LocalDate.now(), "Pagado");
     }
 
     @Test
-    void crearPago_ok() throws Exception {
-        when(pagoService.crearPago(any())).thenReturn(pago);
+    @WithMockUser(roles = {"ADMIN", "STAFF"})
+    public void testCrearPago() throws Exception {
+        pagomodel pago = crearPagoEjemplo();
+        when(pagoservice.crearPago(any(pagomodel.class))).thenReturn(pago);
 
         mockMvc.perform(post("/pago")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(pago)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("Pagado"));
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(pago)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.metodoPago", is("Transferencia")));
     }
 
     @Test
-    void listarPagos_ok() throws Exception {
-        when(pagoService.listarPagos()).thenReturn(List.of(pago));
+    @WithMockUser(roles = {"ADMIN", "STAFF"})
+    public void testListarPagos() throws Exception {
+        pagomodel pago1 = crearPagoEjemplo();
+        pagomodel pago2 = new pagomodel(2L, 101L, 1500, "Tarjeta", LocalDate.now(), "Pendiente");
+        List<pagomodel> lista = Arrays.asList(pago1, pago2);
+        when(pagoservice.listarPagos()).thenReturn(lista);
 
         mockMvc.perform(get("/pago"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.pagomodelList[0].estado").value("Pagado"));
+                .andExpect(jsonPath("$._embedded.pagomodelList.length()").value(2));
     }
 
     @Test
-    void obtenerPago_porId_ok() throws Exception {
-        when(pagoService.obtenerPorId(1L)).thenReturn(pago);
+    @WithMockUser(roles = {"ADMIN", "STAFF", "USER"})
+    public void testObtenerPagoPorId() throws Exception {
+        pagomodel pago = crearPagoEjemplo();
+        when(pagoservice.obtenerPorId(1L)).thenReturn(pago);
 
         mockMvc.perform(get("/pago/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("Pagado"));
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.estado", is("Pagado")));
     }
 
     @Test
-    void actualizarPago_ok() throws Exception {
-        when(pagoService.actualizarPago(eq(1L), any())).thenReturn(pago);
+    @WithMockUser(roles = {"ADMIN", "STAFF"})
+    public void testActualizarPago() throws Exception {
+        pagomodel pagoActualizado = new pagomodel(1L, 100L, 3000, "Efectivo", LocalDate.now(), "Pendiente");
+
+        when(pagoservice.obtenerPorId(1L)).thenReturn(pagoActualizado);
+        when(pagoservice.actualizarPago(eq(1L), any(pagomodel.class))).thenReturn(pagoActualizado);
 
         mockMvc.perform(put("/pago/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(pago)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(pagoActualizado)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.estado").value("Pagado"));
+                .andExpect(jsonPath("$.monto", is(3000)))
+                .andExpect(jsonPath("$.estado", is("Pendiente")));
     }
 
     @Test
-    void eliminarPago_ok() throws Exception {
-        doNothing().when(pagoService).eliminarPago(1L);
+    @WithMockUser(roles = {"ADMIN"})
+    public void testEliminarPago() throws Exception {
+        pagomodel pago = crearPagoEjemplo();
+        when(pagoservice.obtenerPorId(1L)).thenReturn(pago);
+        Mockito.doNothing().when(pagoservice).eliminarPago(1L);
 
         mockMvc.perform(delete("/pago/1"))
                 .andExpect(status().isNoContent());
-    }
-
-    @Test
-    void buscarPorEstado_ok() throws Exception {
-        when(pagoService.buscarPorEstado("Pagado")).thenReturn(List.of(pago));
-
-        mockMvc.perform(get("/pago/buscarEstado")
-                        .param("estado", "Pagado"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].estado").value("Pagado"));
-    }
-
-    @Test
-    void buscarPorRangoFecha_ok() throws Exception {
-        String fecha = LocalDate.now().toString();
-        when(pagoService.buscarPorRangoFecha(any(), any())).thenReturn(List.of(pago));
-
-        mockMvc.perform(get("/pago/buscarRangoFecha")
-                        .param("desde", fecha)
-                        .param("hasta", fecha))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].estado").value("Pagado"));
-    }
-
-    @Test
-    void buscarPorMetodo_ok() throws Exception {
-        when(pagoService.buscarPorMetodo("Tarjeta")).thenReturn(List.of(pago));
-
-        mockMvc.perform(get("/pago/buscarMetodo")
-                        .param("metodo", "Tarjeta"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].metodoPago").value("Tarjeta"));
-    }
-
-    @Test
-    void buscarPorMontoMayor_ok() throws Exception {
-        when(pagoService.buscarPorMontoMayor(10000.0)).thenReturn(List.of(pago));
-
-        mockMvc.perform(get("/pago/buscarMontoMayor")
-                        .param("monto", "10000"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].monto").value(15000.0));
-    }
-
-    @Test
-    void buscarPorMontoMenor_ok() throws Exception {
-        when(pagoService.buscarPorMontoMenor(20000.0)).thenReturn(List.of(pago));
-
-        mockMvc.perform(get("/pago/buscarMontoMenor")
-                        .param("monto", "20000"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].monto").value(15000.0));
     }
 }

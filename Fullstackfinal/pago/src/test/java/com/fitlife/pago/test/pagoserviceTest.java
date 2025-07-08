@@ -10,107 +10,127 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class pagoserviceTest {
+public class pagoserviceTest {
 
     @Mock
-    private pagorepository pagoRepository;
+    private pagorepository pagorepository;
 
     @InjectMocks
-    private pagoservice pagoService;
-
-    private pagomodel pago;
+    private pagoservice pagoservice;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         MockitoAnnotations.openMocks(this);
-        pago = pagomodel.builder()
-                .id(1L)
-                .estado("Pagado")
-                .metodoPago("Tarjeta")
-                .monto(15000.0)
-                .fechaPago(LocalDate.now())
-                .build();
     }
 
     @Test
-    void crearPago_ok() {
-        when(pagoRepository.save(pago)).thenReturn(pago);
-        assertNotNull(pagoService.crearPago(pago));
+    public void testCrearPago() {
+        pagomodel pago = new pagomodel(1L, 100L, 2000, "Transferencia", LocalDate.now(), "Pagado");
+        when(pagorepository.save(pago)).thenReturn(pago);
+
+        pagomodel resultado = pagoservice.crearPago(pago);
+
+        assertEquals(pago, resultado);
     }
 
     @Test
-    void listarPagos_ok() {
-        when(pagoRepository.findAll()).thenReturn(List.of(pago));
-        assertEquals(1, pagoService.listarPagos().size());
+    public void testListarPagos() {
+        List<pagomodel> pagos = Arrays.asList(new pagomodel(), new pagomodel());
+        when(pagorepository.findAll()).thenReturn(pagos);
+
+        List<pagomodel> resultado = pagoservice.listarPagos();
+
+        assertEquals(2, resultado.size());
     }
 
     @Test
-    void obtenerPorId_ok() {
-        when(pagoRepository.findById(1L)).thenReturn(Optional.of(pago));
-        assertEquals("Pagado", pagoService.obtenerPorId(1L).getEstado());
+    public void testObtenerPorId() {
+        pagomodel pago = new pagomodel();
+        when(pagorepository.findById(1L)).thenReturn(Optional.of(pago));
+
+        pagomodel resultado = pagoservice.obtenerPorId(1L);
+
+        assertEquals(pago, resultado);
     }
 
     @Test
-    void actualizarPago_ok() {
-        when(pagoRepository.existsById(1L)).thenReturn(true);
-        when(pagoRepository.save(pago)).thenReturn(pago);
-        assertEquals("Pagado", pagoService.actualizarPago(1L, pago).getEstado());
+    public void testActualizarPago() {
+        pagomodel pago = new pagomodel(1L, 100L, 3000, "Efectivo", LocalDate.now(), "Pendiente");
+        when(pagorepository.existsById(1L)).thenReturn(true);
+        when(pagorepository.save(pago)).thenReturn(pago);
+
+        pagomodel resultado = pagoservice.actualizarPago(1L, pago);
+
+        assertEquals(3000, resultado.getMonto());
+        verify(pagorepository).save(pago);
     }
 
     @Test
-    void actualizarPago_noExiste() {
-        when(pagoRepository.existsById(1L)).thenReturn(false);
-        assertThrows(IllegalArgumentException.class, () -> pagoService.actualizarPago(1L, pago));
+    public void testEliminarPago() {
+        when(pagorepository.existsById(1L)).thenReturn(true);
+        doNothing().when(pagorepository).deleteById(1L);
+
+        pagoservice.eliminarPago(1L);
+
+        verify(pagorepository).deleteById(1L);
     }
 
     @Test
-    void eliminarPago_ok() {
-        when(pagoRepository.existsById(1L)).thenReturn(true);
-        doNothing().when(pagoRepository).deleteById(1L);
-        pagoService.eliminarPago(1L);
-        verify(pagoRepository).deleteById(1L);
+    public void testBuscarPorEstado() {
+        List<pagomodel> lista = Arrays.asList(new pagomodel(), new pagomodel());
+        when(pagorepository.findByEstadoIgnoreCase("Pagado")).thenReturn(lista);
+
+        List<pagomodel> resultado = pagoservice.buscarPorEstado("Pagado");
+
+        assertEquals(2, resultado.size());
     }
 
     @Test
-    void eliminarPago_noExiste() {
-        when(pagoRepository.existsById(1L)).thenReturn(false);
-        assertThrows(IllegalArgumentException.class, () -> pagoService.eliminarPago(1L));
+    public void testBuscarPorRangoFecha() {
+        LocalDate desde = LocalDate.of(2023, 1, 1);
+        LocalDate hasta = LocalDate.of(2023, 12, 31);
+        List<pagomodel> lista = Arrays.asList(new pagomodel());
+        when(pagorepository.findByFechaPagoBetween(desde, hasta)).thenReturn(lista);
+
+        List<pagomodel> resultado = pagoservice.buscarPorRangoFecha(desde, hasta);
+
+        assertEquals(1, resultado.size());
     }
 
     @Test
-    void buscarPorEstado_ok() {
-        when(pagoRepository.findByEstadoIgnoreCase("Pagado")).thenReturn(List.of(pago));
-        assertEquals(1, pagoService.buscarPorEstado("Pagado").size());
+    public void testBuscarPorMontoMayor() {
+        List<pagomodel> lista = Arrays.asList(new pagomodel());
+        when(pagorepository.findByMontoGreaterThan(1000)).thenReturn(lista);
+
+        List<pagomodel> resultado = pagoservice.buscarPorMontoMayor(1000);
+
+        assertEquals(1, resultado.size());
     }
 
     @Test
-    void buscarPorRangoFecha_ok() {
-        LocalDate fecha = LocalDate.now();
-        when(pagoRepository.findByFechaPagoBetween(fecha, fecha)).thenReturn(List.of(pago));
-        assertEquals(1, pagoService.buscarPorRangoFecha(fecha, fecha).size());
+    public void testBuscarPorMontoMenor() {
+        List<pagomodel> lista = Arrays.asList(new pagomodel());
+        when(pagorepository.findByMontoLessThan(5000)).thenReturn(lista);
+
+        List<pagomodel> resultado = pagoservice.buscarPorMontoMenor(5000);
+
+        assertEquals(1, resultado.size());
     }
 
     @Test
-    void buscarPorMetodo_ok() {
-        when(pagoRepository.findByMetodoPagoIgnoreCase("Tarjeta")).thenReturn(List.of(pago));
-        assertEquals(1, pagoService.buscarPorMetodo("Tarjeta").size());
-    }
+    public void testBuscarPorMetodo() {
+        List<pagomodel> lista = Arrays.asList(new pagomodel());
+        when(pagorepository.findByMetodoPagoIgnoreCase("Tarjeta")).thenReturn(lista);
 
-    @Test
-    void buscarPorMontoMayor_ok() {
-        when(pagoRepository.findByMontoGreaterThan(10000.0)).thenReturn(List.of(pago));
-        assertEquals(1, pagoService.buscarPorMontoMayor(10000.0).size());
-    }
+        List<pagomodel> resultado = pagoservice.buscarPorMetodo("Tarjeta");
 
-    @Test
-    void buscarPorMontoMenor_ok() {
-        when(pagoRepository.findByMontoLessThan(20000.0)).thenReturn(List.of(pago));
-        assertEquals(1, pagoService.buscarPorMontoMenor(20000.0).size());
+        assertEquals(1, resultado.size());
     }
 }

@@ -9,14 +9,10 @@ import java.util.List;
 
 @Repository
 public interface pagorepository extends JpaRepository<pagomodel, Long> {
-
+    
     List<pagomodel> findByEstadoIgnoreCase(String estado);
-
     List<pagomodel> findByFechaPagoBetween(LocalDate desde, LocalDate hasta);
-
-    List<pagomodel> findByMetodoPagoIgnoreCase(String metodo);
-
-    List<pagomodel> findByMontoGreaterThan(Double monto);
-
-    List<pagomodel> findByMontoLessThan(Double monto);
+    List<pagomodel> findByMontoGreaterThan(Integer monto);
+    List<pagomodel> findByMontoLessThan(Integer monto);
+    List<pagomodel> findByMetodoPagoIgnoreCase(String metodoPago); // ← nuevo método
 }

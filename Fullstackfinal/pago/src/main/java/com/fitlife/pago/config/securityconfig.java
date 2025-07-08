@@ -14,34 +14,41 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class securityconfig {
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                // Swagger libre
-                .requestMatchers(
-                    "/v3/api-docs/**",
-                    "/swagger-ui/**",
-                    "/swagger-ui.html"
-                ).permitAll()
+@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http.csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(auth -> auth
+            // Acceso libre para Swagger/OpenAPI
+            .requestMatchers(
+                "/v3/api-docs/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html"
+            ).permitAll()
 
-                // GET protegido: ADMIN, SOPORTE, STAFF
-                .requestMatchers(HttpMethod.GET, "/pago/**").hasAnyRole("ADMIN", "SOPORTE", "STAFF")
+            // Acceso GET: ADMIN, SOPORTE, STAFF
+            .requestMatchers(HttpMethod.GET, "/pago/**")
+                .hasAnyRole("ADMIN", "SOPORTE", "STAFF")
 
-                // POST y PUT: ADMIN, STAFF
-                .requestMatchers(HttpMethod.POST, "/pago/**").hasAnyRole("ADMIN", "STAFF")
-                .requestMatchers(HttpMethod.PUT, "/pago/**").hasAnyRole("ADMIN", "STAFF")
+            // Acceso POST y PUT: ADMIN, STAFF
+            .requestMatchers(HttpMethod.POST, "/pago/**")
+                .hasAnyRole("ADMIN", "STAFF")
+            .requestMatchers(HttpMethod.PUT, "/pago/**")
+                .hasAnyRole("ADMIN", "STAFF")
 
-                // DELETE: solo ADMIN
-                .requestMatchers(HttpMethod.DELETE, "/pago/**").hasRole("ADMIN")
+            // Acceso DELETE: solo ADMIN
+            .requestMatchers(HttpMethod.DELETE, "/pago/**")
+                .hasRole("ADMIN")
 
-                // Todo lo demás autenticado
-                .anyRequest().authenticated()
-            )
-            .httpBasic(); // SOLO BASIC AUTH, sin formLogin
-        return http.build();
-    }
+            // Todo lo demás requiere autenticación
+            .anyRequest().authenticated()
+        )
+            // Autenticación básica (sin login visual)
+            .httpBasic();
+
+    return http.build();
+}
+
+
 
     @Bean
     public UserDetailsService userDetailsService() {
