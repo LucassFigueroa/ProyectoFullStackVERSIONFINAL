@@ -14,21 +14,28 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/horarios")
+@Tag(name = "Controlador de Horarios", description = "Gestión de horarios asignados a entrenadores")
 public class horariocontroller {
 
     @Autowired
     private horarioservice horarioService;
 
-    // GET ALL con HATEOAS
+    @Operation(summary = "Listar todos los horarios")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Lista de horarios obtenida exitosamente"),
+        @ApiResponse(responseCode = "403", description = "Acceso denegado")
+    })
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'STAFF', 'CLIENTE')")
     @GetMapping
     public ResponseEntity<CollectionModel<EntityModel<horariomodel>>> getAllHorarios() {
@@ -42,7 +49,11 @@ public class horariocontroller {
                 WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(horariocontroller.class).getAllHorarios()).withSelfRel()));
     }
 
-    // GET BY ID con HATEOAS
+    @Operation(summary = "Obtener un horario por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Horario encontrado"),
+        @ApiResponse(responseCode = "404", description = "Horario no encontrado")
+    })
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'STAFF', 'CLIENTE')")
     @GetMapping("/{id}")
     public ResponseEntity<EntityModel<horariomodel>> getHorarioById(@PathVariable Long id) {
@@ -58,7 +69,12 @@ public class horariocontroller {
         }
     }
 
-    // POST con validación y mensajes
+    @Operation(summary = "Crear un nuevo horario")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Horario creado correctamente"),
+        @ApiResponse(responseCode = "400", description = "Datos inválidos"),
+        @ApiResponse(responseCode = "403", description = "Acceso denegado")
+    })
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR')")
     @PostMapping
     public ResponseEntity<?> crearHorario(@Valid @RequestBody horariomodel horario, BindingResult result) {
@@ -74,7 +90,12 @@ public class horariocontroller {
         return new ResponseEntity<>(horarioService.crearHorario(horario), HttpStatus.CREATED);
     }
 
-    // PUT con validación y mensajes
+    @Operation(summary = "Actualizar un horario existente")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Horario actualizado correctamente"),
+        @ApiResponse(responseCode = "400", description = "Datos inválidos"),
+        @ApiResponse(responseCode = "403", description = "Acceso denegado")
+    })
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR')")
     @PutMapping("/{id}")
     public ResponseEntity<?> actualizarHorario(@PathVariable Long id, @Valid @RequestBody horariomodel horario, BindingResult result) {
@@ -88,7 +109,11 @@ public class horariocontroller {
         return ResponseEntity.ok(horarioService.actualizarHorario(id, horario));
     }
 
-    // DELETE
+    @Operation(summary = "Eliminar un horario por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Horario eliminado correctamente"),
+        @ApiResponse(responseCode = "403", description = "Acceso denegado")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarHorario(@PathVariable Long id) {
@@ -96,7 +121,8 @@ public class horariocontroller {
         return ResponseEntity.noContent().build();
     }
 
-    // Buscar por fecha de inicio
+    @Operation(summary = "Buscar horarios por fecha de inicio")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Horarios encontrados"))
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'STAFF', 'CLIENTE')")
     @GetMapping("/buscarPorInicio")
     public List<horariomodel> buscarPorFechaInicio(@RequestParam String inicio) {
@@ -104,7 +130,8 @@ public class horariocontroller {
         return horarioService.buscarPorFechaInicio(fechaInicio);
     }
 
-    // Buscar por fecha de fin
+    @Operation(summary = "Buscar horarios por fecha de fin")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Horarios encontrados"))
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'STAFF', 'CLIENTE')")
     @GetMapping("/buscarPorFin")
     public List<horariomodel> buscarPorFechaFin(@RequestParam String fin) {
@@ -112,7 +139,8 @@ public class horariocontroller {
         return horarioService.buscarPorFechaFin(fechaFin);
     }
 
-    // Buscar por rango
+    @Operation(summary = "Buscar horarios por rango de fechas")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Horarios encontrados"))
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'STAFF', 'CLIENTE')")
     @GetMapping("/buscarRango")
     public List<horariomodel> buscarPorRango(@RequestParam String desde, @RequestParam String hasta) {
@@ -121,7 +149,8 @@ public class horariocontroller {
         return horarioService.buscarPorRango(d1, d2);
     }
 
-    // Buscar por entrenadorId
+    @Operation(summary = "Buscar horarios por ID del entrenador")
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "Horarios encontrados"))
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'STAFF', 'CLIENTE')")
     @GetMapping("/buscarPorEntrenador")
     public List<horariomodel> buscarPorEntrenadorId(@RequestParam Long entrenadorId) {
