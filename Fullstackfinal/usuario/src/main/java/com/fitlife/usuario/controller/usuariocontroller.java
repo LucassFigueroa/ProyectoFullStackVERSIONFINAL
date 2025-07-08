@@ -2,7 +2,10 @@ package com.fitlife.usuario.controller;
 
 import com.fitlife.usuario.model.usuariomodel;
 import com.fitlife.usuario.service.usuarioservice;
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -11,102 +14,80 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/usuario")
+@Tag(name = "Controlador de Usuario", description = "Operaciones CRUD del microservicio Usuario")
 public class usuariocontroller {
 
     @Autowired
     private usuarioservice usuarioservice;
 
-    @PostMapping("/register")
-    public usuariomodel register(@Valid @RequestBody usuariomodel usuario) {
-        return usuarioservice.register(usuario);
-    }
+    @Operation(summary = "Obtener todos los usuarios")
+@ApiResponse(responseCode = "200", description = "Usuarios encontrados")
+@GetMapping
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+public ResponseEntity<CollectionModel<EntityModel<usuariomodel>>> getAllUsuarios() {
+    List<usuariomodel> usuarios = usuarioservice.getAll();
 
-    @PostMapping("/register/admin")
-public ResponseEntity<?> registerAdmin(@RequestBody usuariomodel usuario, @RequestParam String adminKey) {
-    if (!"ADMIN_SECRET".equals(adminKey)) {
-        usuario.setRol("CLIENTE"); // Forzar CLIENTE si clave es mala
-        return ResponseEntity.ok(usuarioservice.register(usuario));
-    }
-    usuario.setRol("ADMIN"); // 👉 Forzar ADMIN aquí
-    return ResponseEntity.ok(usuarioservice.register(usuario));
-}
-   @PostMapping("/login")
-public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> loginData) {
-    String email = loginData.get("email");
-    String contrasena = loginData.get("contrasena");
+    List<EntityModel<usuariomodel>> usuariosConLinks = usuarios.stream()
+        .map(usuario -> EntityModel.of(usuario,
+            linkTo(methodOn(usuariocontroller.class).getUsuarioById(usuario.getId())).withSelfRel(),
+            linkTo(methodOn(usuariocontroller.class).getAllUsuarios()).withRel("usuarios")))
+        .collect(Collectors.toList());
 
-    usuariomodel user = usuarioservice.login(email, contrasena);
-    if (user != null) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Login OK ✅");
-        response.put("id", user.getId());
-        response.put("nombre", user.getNombre());
-        response.put("email", user.getEmail());
-        response.put("rol", user.getRol());
-        return ResponseEntity.ok(response);
-    } else {
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "Credenciales inválidas ❌");
-        return ResponseEntity.status(401).body(response);
-    }
+    return ResponseEntity.ok(CollectionModel.of(usuariosConLinks));
 }
 
+@Operation(summary = "Obtener un usuario por ID")
+@ApiResponses({
+    @ApiResponse(responseCode = "200", description = "Usuario encontrado"),
+    @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+})
+@GetMapping("/{id}")
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+public ResponseEntity<EntityModel<usuariomodel>> getUsuarioById(@PathVariable long id) {
+    usuariomodel usuario = usuarioservice.getById(id);
 
-    // 🟢 Solo ADMIN y STAFF pueden ver todos los usuarios
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    @GetMapping("/usuarios")
-    public CollectionModel<EntityModel<usuariomodel>> getAll() {
-        List<EntityModel<usuariomodel>> usuarios = usuarioservice.getAll().stream()
-                .map(usuario -> EntityModel.of(usuario,
-                        linkTo(methodOn(usuariocontroller.class).getById(usuario.getId())).withSelfRel(),
-                        linkTo(methodOn(usuariocontroller.class).getAll()).withRel("all-usuarios")
-                ))
-                .collect(Collectors.toList());
+    return ResponseEntity.ok(EntityModel.of(usuario,
+        linkTo(methodOn(usuariocontroller.class).getUsuarioById(id)).withSelfRel(),
+        linkTo(methodOn(usuariocontroller.class).getAllUsuarios()).withRel("usuarios")));
+}
 
-        return CollectionModel.of(usuarios,
-                linkTo(methodOn(usuariocontroller.class).getAll()).withSelfRel());
-    }
+@Operation(summary = "Crear un nuevo usuario")
+@ApiResponse(responseCode = "201", description = "Usuario creado exitosamente")
+@PostMapping
+@PreAuthorize("hasRole('ADMIN')")
+public ResponseEntity<EntityModel<usuariomodel>> createUsuario(@Valid @RequestBody usuariomodel usuario) {
+    usuariomodel nuevoUsuario = usuarioservice.register(usuario);
 
-    // 🟢 Solo ADMIN y STAFF pueden ver uno
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
-    @GetMapping("/usuarios/{id}")
-    public ResponseEntity<EntityModel<usuariomodel>> getById(@PathVariable Long id) {
-        usuariomodel usuario = usuarioservice.getById(id);
-        if (usuario != null) {
-            EntityModel<usuariomodel> resource = EntityModel.of(usuario,
-                    linkTo(methodOn(usuariocontroller.class).getById(id)).withSelfRel(),
-                    linkTo(methodOn(usuariocontroller.class).getAll()).withRel("all-usuarios"),
-                    linkTo(methodOn(usuariocontroller.class).delete(id)).withRel("delete"),
-                    linkTo(methodOn(usuariocontroller.class).update(id, usuario)).withRel("update")
-            );
-            return ResponseEntity.ok(resource);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
+    return ResponseEntity.status(201).body(EntityModel.of(nuevoUsuario,
+        linkTo(methodOn(usuariocontroller.class).getUsuarioById(nuevoUsuario.getId())).withSelfRel(),
+        linkTo(methodOn(usuariocontroller.class).getAllUsuarios()).withRel("usuarios")));
+}
 
-    // 🟢 Solo ADMIN puede actualizar
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/usuarios/{id}")
-    public ResponseEntity<usuariomodel> update(@PathVariable Long id, @Valid @RequestBody usuariomodel details) {
-        usuariomodel updated = usuarioservice.update(id, details);
-        return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
-    }
+@Operation(summary = "Actualizar un usuario por ID")
+@ApiResponse(responseCode = "200", description = "Usuario actualizado exitosamente")
+@PutMapping("/{id}")
+@PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+public ResponseEntity<EntityModel<usuariomodel>> updateUsuario(@PathVariable long id, @Valid @RequestBody usuariomodel usuario) {
+    usuariomodel actualizado = usuarioservice.update(id, usuario);
 
-    // 🟢 Solo ADMIN puede eliminar
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/usuarios/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        boolean deleted = usuarioservice.delete(id);
-        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
-    }
+    return ResponseEntity.ok(EntityModel.of(actualizado,
+        linkTo(methodOn(usuariocontroller.class).getUsuarioById(id)).withSelfRel(),
+        linkTo(methodOn(usuariocontroller.class).getAllUsuarios()).withRel("usuarios")));
+}
+
+@Operation(summary = "Eliminar un usuario por ID")
+@ApiResponse(responseCode = "204", description = "Usuario eliminado correctamente")
+@DeleteMapping("/{id}")
+@PreAuthorize("hasRole('ADMIN')")
+public ResponseEntity<Void> deleteUsuario(@PathVariable long id) {
+    usuarioservice.delete(id);
+    return ResponseEntity.noContent().build();
+}
 }

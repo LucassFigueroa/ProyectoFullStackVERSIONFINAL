@@ -2,6 +2,10 @@ package com.fitlife.entrenador.controller;
 
 import com.fitlife.entrenador.model.entrenador;
 import com.fitlife.entrenador.service.entrenadorservice;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -9,19 +13,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+
 @RestController
 @RequestMapping("/api/entrenadores")
+@Tag(name = "Controlador de Entrenadores", description = "Operaciones CRUD sobre entrenadores en FitLife SPA")
 public class entrenadorcontroller {
 
     @Autowired
     private entrenadorservice entrenadorservice;
 
-    // ✅ Solo ADMIN y STAFF pueden crear entrenadores
+    @Operation(summary = "Crear un nuevo entrenador")
+    @ApiResponse(responseCode = "200", description = "Entrenador creado exitosamente")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @PostMapping
     public ResponseEntity<EntityModel<entrenador>> createEntrenador(@RequestBody entrenador entrenador) {
@@ -32,7 +38,8 @@ public class entrenadorcontroller {
         return ResponseEntity.ok(resource);
     }
 
-    // ✅ ADMIN, STAFF y ENTRENADOR pueden ver lista
+    @Operation(summary = "Obtener todos los entrenadores")
+    @ApiResponse(responseCode = "200", description = "Entrenadores encontrados")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'ENTRENADOR')")
     @GetMapping
     public CollectionModel<EntityModel<entrenador>> getAllEntrenadores() {
@@ -44,7 +51,11 @@ public class entrenadorcontroller {
                 linkTo(methodOn(entrenadorcontroller.class).getAllEntrenadores()).withSelfRel());
     }
 
-    // ✅ ADMIN, STAFF y ENTRENADOR pueden ver uno
+    @Operation(summary = "Obtener un entrenador por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Entrenador encontrado"),
+        @ApiResponse(responseCode = "404", description = "Entrenador no encontrado")
+    })
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF', 'ENTRENADOR')")
     @GetMapping("/{id}")
     public ResponseEntity<EntityModel<entrenador>> getEntrenadorById(@PathVariable Long id) {
@@ -59,7 +70,8 @@ public class entrenadorcontroller {
         }
     }
 
-    // ✅ Solo ADMIN y STAFF pueden actualizar
+    @Operation(summary = "Actualizar un entrenador por ID")
+    @ApiResponse(responseCode = "200", description = "Entrenador actualizado")
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @PutMapping("/{id}")
     public ResponseEntity<entrenador> updateEntrenador(@PathVariable Long id, @RequestBody entrenador entrenador) {
@@ -67,7 +79,11 @@ public class entrenadorcontroller {
         return updated != null ? ResponseEntity.ok(updated) : ResponseEntity.notFound().build();
     }
 
-    // ✅ Solo ADMIN puede eliminar
+    @Operation(summary = "Eliminar un entrenador por ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Entrenador eliminado"),
+        @ApiResponse(responseCode = "404", description = "Entrenador no encontrado")
+    })
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEntrenador(@PathVariable Long id) {
